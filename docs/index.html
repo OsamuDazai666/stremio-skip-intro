@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skip Intro for Stremio</title>
+<meta name="description" content="Netflix-style Skip Intro, Skip Recap and Next Episode buttons for the Stremio desktop app. Built for anime, works for any series.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%237b5bf5' d='M4 5l9 7-9 7zM13 5l9 7-9 7z'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0c0b14;
+    --panel: #15131f;
+    --line: #262338;
+    --text: #ecebf3;
+    --muted: #9b98ad;
+    --accent: #7b5bf5;
+    --accent-2: #a28bff;
+    --ok: #3ecf8e;
+    --radius: 14px;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Ubuntu, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent-2); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .01em; }
+  .brand svg { width: 22px; height: 22px; color: var(--accent); }
+  .top nav a { color: var(--muted); text-decoration: none; margin-left: 22px; font-size: 15px; }
+  .top nav a:hover { color: var(--text); }
+
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 48px 0 72px; }
+  .eyebrow { display: inline-block; font-size: 13px; color: var(--accent-2); background: rgba(123, 91, 245, .12); border: 1px solid rgba(123, 91, 245, .35); padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
+  h1 { font-size: clamp(36px, 5vw, 56px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -.02em; }
+  h1 span { background: linear-gradient(90deg, var(--accent-2), #e0d8ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { color: var(--muted); font-size: 18px; margin: 0 0 30px; max-width: 34em; }
+
+  .install { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer; font: inherit; font-weight: 650; border-radius: 10px; padding: 14px 22px; text-decoration: none; transition: transform .1s ease, background-color .15s ease, box-shadow .15s ease; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; font-size: 17px; box-shadow: 0 8px 30px rgba(123, 91, 245, .35); }
+  .btn-primary:hover { background: #6a48f0; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: var(--panel); }
+  .btn svg { width: 18px; height: 18px; }
+  .small { font-size: 13px; color: var(--muted); margin-top: 14px; }
+
+  .cmd { margin-top: 22px; display: none; }
+  .cmd.show { display: block; animation: rise .25s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .cmd-box { display: flex; align-items: center; gap: 10px; background: #08070e; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 14px; overflow-x: auto; white-space: nowrap; }
+  .cmd-box code { flex: 1; color: #d9d4ff; }
+  .copy-mini { background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 7px; padding: 5px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+  .steps-inline { margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
+  .steps-inline li { margin: 4px 0; }
+  .steps-inline b { color: var(--text); }
+  kbd { font-family: inherit; font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--text); }
+
+  /* Player mock */
+  .player { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
+    background:
+      radial-gradient(ellipse at 70% 30%, rgba(255, 190, 120, .35), transparent 55%),
+      radial-gradient(ellipse at 25% 70%, rgba(110, 160, 255, .35), transparent 60%),
+      linear-gradient(160deg, #2a2240, #0f1622 70%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .55); }
+  .player::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 55%, rgba(0, 0, 0, .75)); }
+  .p-title { position: absolute; left: 4%; top: 6%; font-size: 13px; color: rgba(255, 255, 255, .85); z-index: 1; }
+  .p-bar { position: absolute; left: 4%; right: 4%; bottom: 9%; height: 4px; background: rgba(255, 255, 255, .25); border-radius: 2px; z-index: 1; }
+  .p-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 7%; background: var(--accent); border-radius: 2px; animation: play 9s linear infinite; }
+  .p-bar s { position: absolute; top: -2px; bottom: -2px; left: 4%; width: 8%; background: rgba(255, 210, 90, .7); border-radius: 2px; }
+  @keyframes play { from { width: 3%; } to { width: 14%; } }
+  .p-skip { position: absolute; right: 5%; bottom: 17%; z-index: 2; display: inline-flex; align-items: center; gap: 8px; color: #fff; background: rgba(42, 42, 42, .6); border: 2px solid rgba(255, 255, 255, .75); border-radius: 4px; padding: 10px 20px; font-weight: 650; font-size: 15px; overflow: hidden; }
+  .p-skip::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255, 255, 255, .3); animation: fill 4.5s linear infinite; }
+  .p-skip span { position: relative; }
+  @keyframes fill { 0% { width: 0; } 90% { width: 100%; } 100% { width: 100%; } }
+
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 28px; margin: 0 0 8px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 32px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(123, 91, 245, .18); color: var(--accent-2); font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; }
+  td .tag { display: inline-block; border: 2px solid rgba(255, 255, 255, .7); border-radius: 4px; padding: 3px 10px; font-weight: 650; font-size: 13px; white-space: nowrap; }
+  td .tag.solid { background: #fff; color: #141414; border-color: #fff; }
+
+  details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 650; }
+  details p, details ul { color: var(--muted); margin: 12px 0 0; }
+
+  footer { padding: 36px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; background: #1d1a2b; border: 1px solid var(--line); color: var(--text); padding: 12px 18px; border-radius: 10px; transition: opacity .2s, transform .2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast b { color: var(--ok); }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding-top: 24px; }
+    .grid { grid-template-columns: 1fr; }
+    .top nav { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5l9 7-9 7zM13 5l9 7-9 7z"/></svg>
+      Skip Intro for Stremio
+    </div>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/OsamuDazai666/stremio-skip-intro">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <span class="eyebrow">Free &amp; open source · Windows</span>
+        <h1>Skip intros in Stremio, <span>like Netflix.</span></h1>
+        <p class="lede">"Skip Intro", "Skip Recap" and "Next Episode" buttons for the Stremio desktop app. Built for anime, works for any series. Timestamps come from AniSkip and TheIntroDB.</p>
+
+        <div class="install">
+          <button class="btn btn-primary" id="install-btn" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3v11.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3zM5 19h14v2H5z"/></svg>
+            Install for Stremio
+          </button>
+          <a class="btn btn-ghost" href="install.bat" download>Download install.bat</a>
+        </div>
+        <p class="small">Needs <a href="https://www.stremio.com/downloads">Stremio for Windows</a> (v5). Already installed? <a href="stremio:///">Open Stremio</a></p>
+
+        <div class="cmd" id="cmd" aria-live="polite">
+          <div class="cmd-box">
+            <code id="cmd-text">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</code>
+            <button class="copy-mini" id="copy-again" type="button">Copy</button>
+          </div>
+          <ol class="steps-inline">
+            <li>The command is <b>copied</b>. Press <kbd>Win</kbd> + <kbd>X</kbd> and open <b>Terminal</b> (or PowerShell).</li>
+            <li>Paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> and press <kbd>Enter</kbd>.</li>
+            <li>Click <b>Yes</b> on the Windows prompt. Stremio opens with Skip Intro ready.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="player" role="img" aria-label="Preview: a Skip Intro button over a playing episode">
+        <div class="p-title">Episode 1 · Opening</div>
+        <div class="p-bar"><s></s><i></i></div>
+        <div class="p-skip"><span>Skip Intro</span></div>
+      </div>
+    </div>
+
+    <section id="how">
+      <h2>What you get</h2>
+      <p class="sub">The buttons show up at the right moment, bottom-right, and move up when the player controls are visible. <kbd>Enter</kbd> presses them.</p>
+      <table>
+        <thead><tr><th>While playing</th><th>You see</th></tr></thead>
+        <tbody>
+          <tr><td>"Previously on…"</td><td><span class="tag">Skip Recap</span></td></tr>
+          <tr><td>Intro / anime opening</td><td><span class="tag">Skip Intro</span></td></tr>
+          <tr><td>End credits / anime ending</td><td><span class="tag">Watch Credits</span> <span class="tag solid">▶ Next Episode</span></td></tr>
+          <tr><td>Credits followed by a post-credits scene</td><td><span class="tag">Skip Credits</span> <span class="tag solid">▶ Next Episode</span></td></tr>
+          <tr><td>Next-episode preview</td><td><span class="tag">Skip Preview</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Install in three steps</h2>
+      <p class="sub">One command, one "Yes", done.</p>
+      <div class="grid">
+        <div class="card"><div class="num">1</div><h3>Click Install</h3><p>This copies a one-line installer. You can also download <a href="install.bat">install.bat</a> and double-click it.</p></div>
+        <div class="card"><div class="num">2</div><h3>Paste in Terminal</h3><p>Press <kbd>Win</kbd> + <kbd>X</kbd>, open Terminal, paste and press Enter. Click <b>Yes</b> on the one admin prompt.</p></div>
+        <div class="card"><div class="num">3</div><h3>Watch</h3><p>Stremio restarts. Play an episode, and "Skip Intro" appears during the opening. Updates install themselves.</p></div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>FAQ</h2>
+      <details>
+        <summary>Why isn't this a normal one-click Stremio addon?</summary>
+        <p>Stremio addons can only provide catalogs, streams and subtitles. They can't put a button on the player or seek the video. So this is a small plugin that runs inside the Stremio app's page instead, and the installer sets that up.</p>
+      </details>
+      <details>
+        <summary>What exactly does the installer change?</summary>
+        <ul>
+          <li>Copies the plugin to <code>%LOCALAPPDATA%\StremioSkipIntro</code>.</li>
+          <li>Adds one Stremio-only WebView2 setting (needs the admin "Yes"). It opens a debugging port on <code>127.0.0.1:9334</code>, which only programs on your own PC can reach, so the plugin can be added to Stremio's page.</li>
+          <li>Adds a hidden "Stremio Skip Intro" helper to your Startup folder. When Stremio is open, the helper adds the plugin.</li>
+        </ul>
+        <p>Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own mpv player.</p>
+      </details>
+      <details>
+        <summary>Does it work for anime?</summary>
+        <p>Yes, anime comes first. The plugin maps Stremio's IMDb, Kitsu and MAL episode IDs to MyAnimeList entries, including split seasons and absolute numbering (e.g. One Piece). It then asks AniSkip for the opening and ending times, and TheIntroDB fills in recaps, credits and previews.</p>
+      </details>
+      <details>
+        <summary>No button showed up for my episode</summary>
+        <p>Nobody has submitted timestamps for that episode yet. The plugin only skips where AniSkip or TheIntroDB have data. You can add timestamps on those sites, and everyone benefits.</p>
+      </details>
+      <details>
+        <summary>How do I uninstall?</summary>
+        <p>Run this in Terminal and click Yes:</p>
+        <div class="cmd-box"><code>irm https://osamudazai666.github.io/stremio-skip-intro/uninstall.ps1 | iex</code></div>
+      </details>
+      <details>
+        <summary>Mac, Linux, Android TV?</summary>
+        <p>Not yet. The installer targets the Windows desktop app. On other desktops, the same plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a> (copy <code>skip-intro.plugin.js</code> into its plugins folder).</p>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    Unofficial project, not affiliated with Stremio. Timestamps from <a href="https://aniskip.com">AniSkip</a> and <a href="https://theintrodb.org">TheIntroDB</a>.
+    Source on <a href="https://github.com/OsamuDazai666/stremio-skip-intro">GitHub</a>.
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+  const cmdText = document.getElementById('cmd-text').textContent;
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(html) {
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+  async function copyCommand() {
+    let ok = false;
+    try { await navigator.clipboard.writeText(cmdText); ok = true; } catch (_) {
+      const r = document.createRange();
+      r.selectNodeContents(document.getElementById('cmd-text'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+    }
+    document.getElementById('cmd').classList.add('show');
+    showToast(ok ? '<b>Copied!</b> Paste it into Terminal (Win + X → Terminal).' : 'Select the command below and copy it.');
+  }
+  document.getElementById('install-btn').addEventListener('click', copyCommand);
+  document.getElementById('copy-again').addEventListener('click', copyCommand);
+</script>
+</body>
+</html>

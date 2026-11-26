@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Skip Intro – test harness</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0b0b0f; color: #ddd; font: 14px/1.4 system-ui, sans-serif; display: grid; grid-template-columns: 1fr 360px; height: 100vh; }
+  /* Fake Stremio player (class names mimic CSS-module output) */
+  .player-container-Xq3d1 { position: relative; overflow: hidden; background: radial-gradient(ellipse at 30% 40%, #3a4a6b, #10141d 70%); }
+  .player-container-Xq3d1 .layer-aB12 { position: absolute; inset: 0; }
+  .player-container-Xq3d1 video { width: 100%; height: 100%; opacity: 0; }
+  .fake-title { position: absolute; left: 4%; top: 6%; font-size: 28px; font-weight: 700; color: #fff; text-shadow: 0 2px 8px #000; }
+  .control-bar-layer-Zz91 { position: absolute; left: 0; right: 0; bottom: 0; height: 7.5rem; padding: 1rem 2rem; background: linear-gradient(transparent, rgba(0,0,0,.85)); transition: opacity .2s; }
+  .overlayHidden-Pq77 .control-bar-layer-Zz91 { opacity: 0; }
+  .seek { height: 6px; background: rgba(255,255,255,.25); border-radius: 3px; margin-top: 1.2rem; position: relative; cursor: pointer; }
+  .seek .pos { position: absolute; left: 0; top: 0; bottom: 0; background: #7b5bf5; border-radius: 3px; }
+  .seek .mark { position: absolute; top: -3px; bottom: -3px; background: rgba(255,200,0,.6); }
+  .timecode { margin-top: .8rem; color: #fff; font-variant-numeric: tabular-nums; }
+  aside { padding: 12px; overflow: auto; background: #15151c; border-left: 1px solid #2a2a35; }
+  aside h3 { margin: 14px 0 6px; font-size: 13px; text-transform: uppercase; color: #9a9ab0; letter-spacing: .05em; }
+  aside button, aside select, aside input { font: inherit; }
+  aside button { margin: 2px 2px 2px 0; padding: 4px 8px; background: #2a2a38; color: #eee; border: 1px solid #3a3a4a; border-radius: 4px; cursor: pointer; }
+  aside label { display: block; margin: 4px 0; }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background: #0e0e14; padding: 8px; border-radius: 4px; max-height: 320px; overflow: auto; }
+</style>
+</head>
+<body>
+<main class="player-container-Xq3d1 overlayHidden-Pq77" id="player">
+  <div class="layer-aB12"><video id="vid"></video></div>
+  <div class="fake-title" id="title"></div>
+  <div class="control-bar-layer-Zz91">
+    <div class="seek" id="seek"><div class="pos" id="pos"></div></div>
+    <div class="timecode" id="tc"></div>
+  </div>
+</main>
+<aside>
+  <h3>Test case</h3>
+  <select id="case"></select>
+  <button id="load">Load</button>
+  <label><input type="checkbox" id="hasNext" checked> has next episode</label>
+  <h3>Playback</h3>
+  <button id="play">Play/Pause</button>
+  <select id="speed"><option>1</option><option selected>4</option><option>10</option><option>30</option></select>x
+  <div id="jumps"></div>
+  <h3>Settings</h3>
+  <div id="settings"></div>
+  <h3>Status</h3>
+  <pre id="status"></pre>
+  <h3>Events</h3>
+  <pre id="events"></pre>
+</aside>
+
+<script>
+  // ---- Test cases ---------------------------------------------------------
+  const onePieceVideos = [];
+  for (let i = 1; i <= 1100; i++) onePieceVideos.push({ id: 'tt0388629:' + (Math.floor((i - 1) / 100) + 1) + ':' + (((i - 1) % 100) + 1), season: Math.floor((i - 1) / 100) + 1, episode: ((i - 1) % 100) + 1 });
+  const CASES = {
+    aot: { label: 'Attack on Titan S3E13 (Cinemeta / IMDb)', videoId: 'tt2560140:3:13', name: 'Attack on Titan', duration: 1440, season: 3, episode: 13 },
+    jjk: { label: 'Jujutsu Kaisen ep 1 (Kitsu id)', videoId: 'kitsu:42765:1', name: 'Jujutsu Kaisen', duration: 1420, season: 1, episode: 1 },
+    jjk2: { label: 'Jujutsu Kaisen S2E3 (IMDb)', videoId: 'tt12343534:2:3', name: 'Jujutsu Kaisen', duration: 1420, season: 2, episode: 3 },
+    op: { label: 'One Piece ep 1000 (absolute numbering)', videoId: 'tt0388629:10:100', name: 'One Piece', duration: 1420, season: 10, episode: 100, videos: onePieceVideos },
+    bb: { label: 'Breaking Bad S1E2 (TheIntroDB)', videoId: 'tt0903747:1:2', name: 'Breaking Bad', duration: 2905, season: 1, episode: 2 },
+    movie: { label: 'Interstellar (movie)', videoId: 'tt0816692', name: 'Interstellar', duration: 10140, type: 'movie' },
+  };
+
+  // ---- Fake <video> clock ---------------------------------------------------
+  const vid = document.getElementById('vid');
+  const clock = { t: 0, d: NaN, paused: true, src: '' };
+  Object.defineProperty(vid, 'currentTime', { get: () => clock.t, set: (v) => { clock.t = Math.max(0, Math.min(v, clock.d)); vid.dispatchEvent(new Event('seeking')); vid.dispatchEvent(new Event('timeupdate')); ev('seek -> ' + clock.t.toFixed(1)); } });
+  Object.defineProperty(vid, 'duration', { get: () => clock.d });
+  Object.defineProperty(vid, 'paused', { get: () => clock.paused });
+  Object.defineProperty(vid, 'currentSrc', { get: () => clock.src });
+  let last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    if (!clock.paused && Number.isFinite(clock.d)) {
+      clock.t = Math.min(clock.d, clock.t + ((now - last) / 1000) * Number(document.getElementById('speed').value));
+      if (clock.t >= clock.d) { clock.paused = true; ev('ended'); }
+      vid.dispatchEvent(new Event('timeupdate'));
+    }
+    last = now;
+    renderBar();
+  }, 100);
+
+  // ---- Fake Stremio core ----------------------------------------------------
+  let current = null;
+  window.services = { core: { transport: {
+    getState: async (field) => {
+      if (field !== 'player' || !current) return null;
+      const c = current;
+      return {
+        selected: { streamRequest: { path: { id: c.videoId, type: c.type || 'series' } } },
+        metaItem: { type: 'Ready', content: { id: c.videoId.split(':')[0], name: c.name, type: c.type || 'series', videos: c.videos || [] } },
+        seriesInfo: c.season ? { season: c.season, episode: c.episode } : null,
+        nextVideo: document.getElementById('hasNext').checked && c.type !== 'movie' ? { deepLinks: { player: '#/player/next-episode' } } : null,
+        title: c.name,
+      };
+    },
+    dispatch: (action, field) => ev('core.dispatch ' + JSON.stringify(action) + ' ' + field),
+  } } };
+  window.addEventListener('hashchange', () => {
+    ev('route -> ' + location.hash);
+    if (location.hash === '#/player/next-episode') { clock.paused = true; setTimeout(() => { location.hash = '#/player/test'; }, 1500); }
+  });
+
+  function loadCase(key) {
+    current = CASES[key];
+    location.hash = '#/player/test';
+    clock.t = 0; clock.d = current.duration; clock.src = 'fake://' + current.videoId; clock.paused = false;
+    document.getElementById('title').textContent = current.label;
+    ev('loaded ' + current.videoId);
+  }
+
+  // ---- Overlay behaviour like Stremio (visible on mouse move for 3s) --------
+  const player = document.getElementById('player');
+  let hideT = null;
+  player.addEventListener('mousemove', () => {
+    player.classList.remove('overlayHidden-Pq77');
+    clearTimeout(hideT);
+    hideT = setTimeout(() => { if (!clock.paused) player.classList.add('overlayHidden-Pq77'); }, 3000);
+  });
+  player.addEventListener('click', () => ev('player clicked (would toggle pause)'));
+
+  // ---- UI -------------------------------------------------------------------
+  const fmt = (s) => Number.isFinite(s) ? Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') : '--:--';
+  function renderBar() {
+    document.getElementById('pos').style.width = (Number.isFinite(clock.d) ? (clock.t / clock.d) * 100 : 0) + '%';
+    document.getElementById('tc').textContent = fmt(clock.t) + ' / ' + fmt(clock.d) + (clock.paused ? '  (paused)' : '');
+    const st = window.SkipIntro ? window.SkipIntro.status() : null;
+    const segs = st ? st.segments : [];
+    const seek = document.getElementById('seek');
+    const sig = JSON.stringify(segs.map((s) => [s.start, s.end]));
+    if (seek.dataset.sig !== sig) {
+      seek.dataset.sig = sig;
+      seek.querySelectorAll('.mark').forEach((m) => m.remove());
+      const jumps = document.getElementById('jumps');
+      jumps.textContent = '';
+      for (const s of segs) {
+        const m = document.createElement('div');
+        m.className = 'mark';
+        m.style.left = (s.start / clock.d) * 100 + '%';
+        m.style.width = ((s.end - s.start) / clock.d) * 100 + '%';
+        seek.appendChild(m);
+        const b = document.createElement('button');
+        b.textContent = 'Jump to ' + s.type + ' (' + fmt(s.start) + ')';
+        b.onclick = () => { vid.currentTime = Math.max(0, s.start - 3); };
+        jumps.appendChild(b);
+      }
+    }
+    document.getElementById('status').textContent = JSON.stringify(st, null, 1);
+  }
+  document.getElementById('seek').addEventListener('click', (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    vid.currentTime = ((e.clientX - r.left) / r.width) * clock.d;
+  });
+  const events = [];
+  function ev(msg) {
+    events.unshift(new Date().toLocaleTimeString() + '  ' + msg);
+    document.getElementById('events').textContent = events.slice(0, 40).join('\n');
+  }
+  const sel = document.getElementById('case');
+  for (const [k, c] of Object.entries(CASES)) sel.add(new Option(c.label, k));
+  document.getElementById('load').onclick = () => loadCase(sel.value);
+  document.getElementById('play').onclick = () => { clock.paused = !clock.paused; };
+
+  // Settings (plugin falls back to localStorage without Stremio Enhanced)
+  const SETTINGS = {
+    si_intro: ['button', 'auto', 'off'], si_recap: ['button', 'auto', 'off'], si_outro: ['next', 'auto', 'button', 'off'],
+    si_preview: ['button', 'auto', 'off'], si_countdown: ['5', '3', '0', '10'],
+  };
+  const sdiv = document.getElementById('settings');
+  for (const [k, opts] of Object.entries(SETTINGS)) {
+    const l = document.createElement('label');
+    l.textContent = k + ' ';
+    const s = document.createElement('select');
+    for (const o of opts) s.add(new Option(o, o));
+    const saved = localStorage.getItem('skipintro.' + k);
+    if (saved) s.value = JSON.parse(saved);
+    s.onchange = () => { localStorage.setItem('skipintro.' + k, JSON.stringify(s.value)); window.SkipIntro.settings[k] = s.value; };
+    l.appendChild(s);
+    sdiv.appendChild(l);
+  }
+</script>
+<script src="../skip-intro.plugin.js"></script>
+</body>
+</html>
