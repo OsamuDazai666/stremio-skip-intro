@@ -4,252 +4,531 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Skip Intro for Stremio</title>
-<meta name="description" content="Netflix-style Skip Intro, Skip Recap and Next Episode buttons for the Stremio desktop app. Built for anime, works for any series.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%237b5bf5' d='M4 5l9 7-9 7zM13 5l9 7-9 7z'/%3E%3C/svg%3E">
+<meta name="description" content="Netflix-style Skip Intro and Next Episode buttons for the Stremio desktop app on Windows. Made for anime, works for any series.">
+<meta name="theme-color" content="#0E1A2B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230E1A2B'/%3E%3Cpath fill='%23FFE14A' d='M6 7l6 5-6 5zM12 7l6 5-6 5z'/%3E%3C/svg%3E">
 <style>
   :root {
-    --bg: #0c0b14;
-    --panel: #15131f;
-    --line: #262338;
-    --text: #ecebf3;
-    --muted: #9b98ad;
-    --accent: #7b5bf5;
-    --accent-2: #a28bff;
-    --ok: #3ecf8e;
-    --radius: 14px;
-    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Ubuntu, sans-serif;
+    --theater: #0E1A2B;
+    --theater-2: #13223A;
+    --screen: #070E18;
+    --yellow: #FFE14A;
+    --paper: #EEF1F5;
+    --mist: #8A97A8;
+    --line: #22344F;
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --sub-font: "Trebuchet MS", "Fira Sans", "Segoe UI", sans-serif;
+    --body-font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    --mono: "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased; }
-  a { color: var(--accent-2); }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  html { background: var(--theater); scrollbar-color: #2F4466 var(--theater); }
+  body { margin: 0; color: var(--paper); font: 400 17px/1.6 var(--body-font); -webkit-font-smoothing: antialiased; caret-color: var(--yellow); }
+  ::selection { background: var(--yellow); color: #111; }
+  a { color: var(--paper); text-decoration-color: rgba(255, 225, 74, .6); text-underline-offset: .2em; text-decoration-thickness: 1.5px; }
+  a:hover { text-decoration-color: var(--yellow); }
+  :focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; border-radius: 4px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  header.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .01em; }
-  .brand svg { width: 22px; height: 22px; color: var(--accent); }
-  .top nav a { color: var(--muted); text-decoration: none; margin-left: 22px; font-size: 15px; }
-  .top nav a:hover { color: var(--text); }
+  .page { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
 
-  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 48px 0 72px; }
-  .eyebrow { display: inline-block; font-size: 13px; color: var(--accent-2); background: rgba(123, 91, 245, .12); border: 1px solid rgba(123, 91, 245, .35); padding: 4px 10px; border-radius: 999px; margin-bottom: 18px; }
-  h1 { font-size: clamp(36px, 5vw, 56px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -.02em; }
-  h1 span { background: linear-gradient(90deg, var(--accent-2), #e0d8ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lede { color: var(--muted); font-size: 18px; margin: 0 0 30px; max-width: 34em; }
+  /* Top bar */
+  .bar { display: flex; justify-content: space-between; align-items: center; padding: 22px 0 18px; font-size: 15px; }
+  .bar .name { font-weight: 650; letter-spacing: .005em; display: flex; align-items: center; gap: 10px; }
+  .bar .name svg { width: 22px; height: 22px; }
+  .bar a { color: var(--mist); text-decoration: none; }
+  .bar a:hover { color: var(--paper); }
 
-  .install { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  .btn { display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer; font: inherit; font-weight: 650; border-radius: 10px; padding: 14px 22px; text-decoration: none; transition: transform .1s ease, background-color .15s ease, box-shadow .15s ease; }
-  .btn:active { transform: scale(.97); }
-  .btn-primary { background: var(--accent); color: #fff; font-size: 17px; box-shadow: 0 8px 30px rgba(123, 91, 245, .35); }
-  .btn-primary:hover { background: #6a48f0; }
-  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
-  .btn-ghost:hover { background: var(--panel); }
-  .btn svg { width: 18px; height: 18px; }
-  .small { font-size: 13px; color: var(--muted); margin-top: 14px; }
+  /* ------------------------------------------------------------------ */
+  /* Player demo                                                         */
+  /* ------------------------------------------------------------------ */
+  .player { position: relative; aspect-ratio: 16 / 9; background: var(--screen); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 255, 255, .06); isolation: isolate; user-select: none; }
+  .scene { position: absolute; inset: 0; transition: filter .6s ease; }
+  .sky { position: absolute; inset: 0; transition: background 1.2s ease; background: linear-gradient(#1b2c4d, #36507a 60%, #6d7fa3); }
+  .player[data-seg="recap"] .scene { filter: sepia(.55) saturate(.7) brightness(.85); }
+  .player[data-seg="recap"] .sky { background: linear-gradient(#3b2d44, #8a5b5b 55%, #d59b6b); }
+  .player[data-seg="intro"] .sky { background: linear-gradient(115deg, #1b1446, #5a2a7a 35%, #e4527a 65%, #ffb36b); }
+  .player[data-seg="episode"] .sky { background: linear-gradient(#050b1a, #0f2142 55%, #24406b); }
+  .player[data-seg="credits"] .sky, .player[data-seg="preview"] .sky { background: #05080f; }
 
-  .cmd { margin-top: 22px; display: none; }
-  .cmd.show { display: block; animation: rise .25s ease; }
-  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-  .cmd-box { display: flex; align-items: center; gap: 10px; background: #08070e; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 14px; overflow-x: auto; white-space: nowrap; }
-  .cmd-box code { flex: 1; color: #d9d4ff; }
-  .copy-mini { background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 7px; padding: 5px 10px; cursor: pointer; font: inherit; font-size: 12px; }
-  .steps-inline { margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
-  .steps-inline li { margin: 4px 0; }
-  .steps-inline b { color: var(--text); }
-  kbd { font-family: inherit; font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; color: var(--text); }
+  .stars { position: absolute; inset: 0 0 40% 0; opacity: 0; transition: opacity 1s ease;
+    background-image: radial-gradient(1.5px 1.5px at 12% 22%, #fff, transparent), radial-gradient(1px 1px at 28% 12%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 47% 30%, #fff, transparent), radial-gradient(1px 1px at 63% 16%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 81% 26%, #fff, transparent), radial-gradient(1px 1px at 92% 9%, #fff, transparent),
+      radial-gradient(1px 1px at 36% 40%, #fff, transparent), radial-gradient(1px 1px at 72% 44%, #fff, transparent); }
+  .moon { position: absolute; top: 13%; right: 16%; width: 7%; aspect-ratio: 1; border-radius: 50%; background: #f4efd8;
+    box-shadow: 0 0 40px 6px rgba(244, 239, 216, .25); opacity: 0; transition: opacity 1s ease; }
+  .player[data-seg="episode"] .stars, .player[data-seg="episode"] .moon { opacity: 1; }
 
-  /* Player mock */
-  .player { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line);
-    background:
-      radial-gradient(ellipse at 70% 30%, rgba(255, 190, 120, .35), transparent 55%),
-      radial-gradient(ellipse at 25% 70%, rgba(110, 160, 255, .35), transparent 60%),
-      linear-gradient(160deg, #2a2240, #0f1622 70%);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, .55); }
-  .player::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 55%, rgba(0, 0, 0, .75)); }
-  .p-title { position: absolute; left: 4%; top: 6%; font-size: 13px; color: rgba(255, 255, 255, .85); z-index: 1; }
-  .p-bar { position: absolute; left: 4%; right: 4%; bottom: 9%; height: 4px; background: rgba(255, 255, 255, .25); border-radius: 2px; z-index: 1; }
-  .p-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 7%; background: var(--accent); border-radius: 2px; animation: play 9s linear infinite; }
-  .p-bar s { position: absolute; top: -2px; bottom: -2px; left: 4%; width: 8%; background: rgba(255, 210, 90, .7); border-radius: 2px; }
-  @keyframes play { from { width: 3%; } to { width: 14%; } }
-  .p-skip { position: absolute; right: 5%; bottom: 17%; z-index: 2; display: inline-flex; align-items: center; gap: 8px; color: #fff; background: rgba(42, 42, 42, .6); border: 2px solid rgba(255, 255, 255, .75); border-radius: 4px; padding: 10px 20px; font-weight: 650; font-size: 15px; overflow: hidden; }
-  .p-skip::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255, 255, 255, .3); animation: fill 4.5s linear infinite; }
-  .p-skip span { position: relative; }
-  @keyframes fill { 0% { width: 0; } 90% { width: 100%; } 100% { width: 100%; } }
+  .streaks { position: absolute; inset: -20%; opacity: 0; transition: opacity .5s ease;
+    background: repeating-linear-gradient(115deg, transparent 0 60px, rgba(255, 255, 255, .10) 60px 64px, transparent 64px 140px); }
+  .player[data-seg="intro"] .streaks { opacity: 1; animation: streak 1.6s linear infinite; }
+  @keyframes streak { to { transform: translateX(149px); } }
 
-  section { padding: 64px 0; border-top: 1px solid var(--line); }
-  h2 { font-size: 28px; margin: 0 0 8px; letter-spacing: -.01em; }
-  .sub { color: var(--muted); margin: 0 0 32px; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-  .card h3 { margin: 0 0 6px; font-size: 17px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15px; }
-  .num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(123, 91, 245, .18); color: var(--accent-2); font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+  .hills { position: absolute; left: 0; right: 0; bottom: 0; height: 48%; transition: opacity .6s ease; }
+  .hills svg { position: absolute; bottom: 0; left: -5%; width: 110%; height: 100%; }
+  .player[data-seg="credits"] .hills, .player[data-seg="preview"] .hills { opacity: 0; }
 
-  table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; }
-  td .tag { display: inline-block; border: 2px solid rgba(255, 255, 255, .7); border-radius: 4px; padding: 3px 10px; font-weight: 650; font-size: 13px; white-space: nowrap; }
-  td .tag.solid { background: #fff; color: #141414; border-color: #fff; }
+  .credits-window { position: absolute; inset: 7% 0 36% 0; overflow: hidden; opacity: 0; transition: opacity .6s ease;
+    -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); }
+  .credits { position: absolute; left: 0; right: 0; top: 0; display: grid; justify-items: center; will-change: transform;
+    font: 500 clamp(10px, 1.35vw, 15px)/2.1 var(--body-font); color: #c9d2de; text-align: center; }
+  .credits b { display: block; color: var(--mist); font-weight: 500; font-size: .82em; margin-top: 1.2em; }
+  .player[data-seg="credits"] .credits-window { opacity: 1; }
 
-  details { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; }
-  summary { cursor: pointer; font-weight: 650; }
-  details p, details ul { color: var(--muted); margin: 12px 0 0; }
+  .card { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+  .card span { font: 700 clamp(18px, 3.4vw, 40px)/1.1 var(--sub-font); color: var(--paper); letter-spacing: .01em; }
+  .player[data-seg="preview"] .card { opacity: 1; }
 
-  footer { padding: 36px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+  /* Fansub subtitle */
+  .sub { position: absolute; left: 6%; right: 6%; bottom: 19%; text-align: center; pointer-events: none; z-index: 2;
+    font: 700 clamp(15px, 2.55vw, 30px)/1.25 var(--sub-font); color: var(--yellow);
+    -webkit-text-stroke: .11em #000; paint-order: stroke fill; text-shadow: 0 .06em .12em rgba(0, 0, 0, .55);
+    opacity: 0; transition: opacity .18s linear; text-wrap: balance; }
+  .sub.on { opacity: 1; }
 
-  .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; background: #1d1a2b; border: 1px solid var(--line); color: var(--text); padding: 12px 18px; border-radius: 10px; transition: opacity .2s, transform .2s; pointer-events: none; }
-  .toast.show { opacity: 1; transform: translate(-50%, 0); }
-  .toast b { color: var(--ok); }
+  /* Player chrome */
+  .chrome { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .title { position: absolute; top: 4.5%; left: 3.5%; font-size: clamp(11px, 1.3vw, 15px); color: rgba(255, 255, 255, .85); font-weight: 600; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+  .title span { color: rgba(255, 255, 255, .6); font-weight: 400; margin-left: .6em; }
+  .controls { position: absolute; left: 0; right: 0; bottom: 0; padding: 5% 3.5% 3.2%; pointer-events: auto;
+    background: linear-gradient(transparent, rgba(0, 0, 0, .72)); display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+  .pp { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #fff; cursor: pointer; padding: 0; }
+  .pp:hover { background: rgba(255, 255, 255, .12); }
+  .pp svg { width: 18px; height: 18px; }
+  .track { position: relative; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .22); }
+  .track .seg { position: absolute; top: 0; bottom: 0; }
+  .track .seg.intro { background: rgba(255, 225, 74, .45); }
+  .player[data-seg="intro"] .track .seg.intro { background: var(--yellow); }
+  .track .seg.credits { background: rgba(255, 255, 255, .18); }
+  .track .fill { position: absolute; left: 0; top: 0; bottom: 0; background: #fff; border-radius: 3px; width: 0; mix-blend-mode: normal; opacity: .85; }
+  .track .head { position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
+  .time { font: 500 13px/1 var(--body-font); font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, .85); min-width: 92px; text-align: right; }
 
-  @media (max-width: 860px) {
-    .hero { grid-template-columns: 1fr; padding-top: 24px; }
-    .grid { grid-template-columns: 1fr; }
-    .top nav { display: none; }
+  /* Skip buttons (same look as the plugin) */
+  .skips { position: absolute; right: 4.5%; bottom: 17%; z-index: 4; display: flex; gap: 10px; pointer-events: none;
+    opacity: 0; transform: translateY(10px); transition: opacity .3s var(--ease-out), transform .45s var(--ease-out); }
+  .skips.on { opacity: 1; transform: none; pointer-events: auto; }
+  .sbtn { position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: .5em; padding: .72em 1.45em; border-radius: 4px; cursor: pointer;
+    font: 650 clamp(12px, 1.35vw, 16px)/1 var(--body-font); white-space: nowrap; transition: background-color .15s ease, color .15s ease, transform .1s ease; }
+  .sbtn:active { transform: scale(.96); }
+  .sbtn svg { width: 1em; height: 1em; }
+  .sbtn.ghost { color: #fff; background: rgba(42, 42, 42, .6); border: 2px solid rgba(255, 255, 255, .78); }
+  .sbtn.ghost:hover { background: #fff; color: #141414; border-color: #fff; }
+  .sbtn.solid { color: #141414; background: #fff; border: 2px solid #fff; }
+  .sbtn.solid:hover { background: rgba(255, 255, 255, .84); }
+  .sbtn:focus-visible { outline-offset: 2px; }
+
+  .flash { position: absolute; inset: 0; z-index: 5; background: #fff; opacity: 0; pointer-events: none; }
+  .flash.go { animation: flash .35s ease-out; }
+  @keyframes flash { from { opacity: .22; } to { opacity: 0; } }
+
+  /* ------------------------------------------------------------------ */
+  /* Install block                                                       */
+  /* ------------------------------------------------------------------ */
+  .lead { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 56px; padding: 56px 0 88px; align-items: start; }
+  h1 { font: 700 clamp(34px, 4.6vw, 54px)/1.04 var(--body-font); letter-spacing: -.025em; margin: 0 0 16px; text-wrap: balance; }
+  .lead p { margin: 0; color: var(--mist); max-width: 34em; }
+  .get { padding-top: 6px; }
+  .copy { display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer; padding: 15px 24px 15px 20px; border-radius: 8px;
+    background: var(--yellow); color: #14110a; font: 700 17px/1 var(--body-font); box-shadow: 0 10px 30px -12px rgba(255, 225, 74, .55);
+    transition: transform .1s ease, background-color .15s ease; }
+  .copy:hover { background: #ffe865; }
+  .copy:active { transform: scale(.97); }
+  .copy svg { width: 20px; height: 20px; }
+  .copy .idle, .copy .done { display: inline-flex; align-items: center; gap: 10px; }
+  .copy .done, .copy.copied .idle { display: none; }
+  .copy.copied .done { display: inline-flex; }
+  .term { margin-top: 18px; background: #0A1220; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+    font: 14px/1.5 var(--mono); white-space: nowrap; color: #DCE3EC; }
+  .term .ps { color: var(--mist); user-select: none; margin-right: .6em; }
+  .get .term { white-space: normal; overflow-wrap: anywhere; font-size: 13.5px; }
+  .fine { margin-top: 14px; font-size: 14px; color: var(--mist); }
+  .fine a { color: var(--paper); }
+
+  /* ------------------------------------------------------------------ */
+  /* Sections                                                            */
+  /* ------------------------------------------------------------------ */
+  section { padding: 0 0 96px; }
+  h2 { font: 700 28px/1.15 var(--body-font); letter-spacing: -.015em; margin: 0 0 10px; }
+  .intro-copy { color: var(--mist); margin: 0 0 36px; max-width: 40em; }
+
+  /* Annotated seek bar */
+  .map { display: grid; grid-template-columns: 1fr 1.25fr 4fr 1.6fr 1fr; gap: 6px; }
+  .map .lane { height: 12px; border-radius: 3px; background: #23395A; }
+  .map .lane.hot { background: var(--yellow); }
+  .map .lane.soft { background: #34507A; }
+  .map .what { font-size: 14px; color: var(--mist); margin-top: 14px; padding-right: 8px; }
+  .map .what strong { display: block; color: var(--paper); font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+  .pill { display: inline-block; margin: 0 6px 6px 0; border-radius: 4px; padding: 5px 10px; font: 650 13px/1 var(--body-font); white-space: nowrap; }
+  .pill.ghost { color: #fff; border: 2px solid rgba(255, 255, 255, .75); background: rgba(42, 42, 42, .6); }
+  .pill.solid { color: #141414; background: #fff; border: 2px solid #fff; }
+  .none { font-style: italic; }
+
+  /* Steps */
+  .steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--line); }
+  .steps li { counter-increment: step; padding: 22px 28px 0 0; }
+  .steps li::before { content: counter(step); display: block; font: 700 44px/1 var(--sub-font); color: var(--yellow); -webkit-text-stroke: .06em #000; paint-order: stroke fill; margin-bottom: 14px; }
+  .steps strong { display: block; font-size: 18px; margin-bottom: 6px; }
+  .steps p { margin: 0; color: var(--mist); font-size: 15px; }
+  kbd { font: 600 12.5px/1 var(--body-font); color: var(--paper); background: var(--theater-2); border: 1px solid #2E4366; border-bottom-width: 2px; border-radius: 5px; padding: 3px 7px; }
+
+  /* FAQ */
+  .faq { max-width: 760px; border-top: 1px solid var(--line); }
+  details { border-bottom: 1px solid var(--line); }
+  summary { list-style: none; cursor: pointer; padding: 18px 0; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary svg { width: 16px; height: 16px; flex: none; color: var(--mist); transition: transform .25s var(--ease-out); }
+  details[open] summary svg { transform: rotate(180deg); }
+  details > div { padding: 0 0 20px; color: var(--mist); max-width: 64ch; }
+  details > div p { margin: 0 0 10px; }
+  details ul { margin: 0; padding-left: 20px; }
+  details li { margin-bottom: 6px; }
+  details code, .fine code { font: 13.5px var(--mono); color: var(--paper); }
+  details .term { margin-top: 6px; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 56px; font-size: 14px; color: var(--mist); }
+
+  /* Toast-free copy feedback: the button itself confirms. Live region for screen readers. */
+
+  @media (max-width: 880px) {
+    .lead { grid-template-columns: 1fr; gap: 28px; padding-top: 36px; }
+    .steps { grid-template-columns: 1fr; }
+    .steps li { padding-right: 0; padding-bottom: 8px; }
+    .map { grid-template-columns: 1fr; gap: 0; }
+    .map .lane { display: none; }
+    .map .what { display: grid; grid-template-columns: 8px 1fr; column-gap: 14px; margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .map .what::before { content: ""; grid-row: 1 / span 3; border-radius: 3px; background: #34507A; }
+    .map .what.hot::before { background: var(--yellow); }
+    .map .what > * { justify-self: start; grid-column: 2; }
   }
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 560px) {
+    .page { padding: 0 18px; }
+    .player { border-radius: 6px; }
+    .controls { gap: 8px; }
+    .time { min-width: 0; font-size: 11px; }
+    .pp { width: 26px; height: 26px; }
+    .skips { bottom: 21%; gap: 6px; }
+    .sub { bottom: 40%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .streaks { animation: none !important; }
+    .skips, .sub, .scene, .sky { transition: none; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5l9 7-9 7zM13 5l9 7-9 7z"/></svg>
+<div class="page">
+  <header class="bar">
+    <span class="name">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#13223A"/><path fill="#FFE14A" d="M6 7l6 5-6 5zM12 7l6 5-6 5z"/></svg>
       Skip Intro for Stremio
-    </div>
-    <nav>
-      <a href="#how">How it works</a>
-      <a href="#faq">FAQ</a>
-      <a href="https://github.com/OsamuDazai666/stremio-skip-intro">GitHub</a>
-    </nav>
+    </span>
+    <a href="https://github.com/OsamuDazai666/stremio-skip-intro">Source on GitHub</a>
   </header>
 
   <main>
-    <div class="hero">
-      <div>
-        <span class="eyebrow">Free &amp; open source · Windows</span>
-        <h1>Skip intros in Stremio, <span>like Netflix.</span></h1>
-        <p class="lede">"Skip Intro", "Skip Recap" and "Next Episode" buttons for the Stremio desktop app. Built for anime, works for any series. Timestamps come from AniSkip and TheIntroDB.</p>
-
-        <div class="install">
-          <button class="btn btn-primary" id="install-btn" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3v11.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3zM5 19h14v2H5z"/></svg>
-            Install for Stremio
-          </button>
-          <a class="btn btn-ghost" href="install.bat" download>Download install.bat</a>
+    <!-- Live demo -->
+    <div class="player" id="player" data-seg="recap" role="region" aria-label="Demo: an episode plays and Skip Intro appears during the opening">
+      <div class="scene" aria-hidden="true">
+        <div class="sky"></div>
+        <div class="stars"></div>
+        <div class="moon"></div>
+        <div class="streaks"></div>
+        <div class="hills">
+          <svg viewBox="0 0 1200 400" preserveAspectRatio="none">
+            <path d="M0 230 C150 170 260 210 380 180 C520 145 610 205 760 170 C900 138 1030 190 1200 160 L1200 400 L0 400Z" fill="#2a3f63" opacity=".75"/>
+            <path d="M0 290 C120 250 250 280 400 245 C560 210 660 275 820 250 C980 225 1080 265 1200 240 L1200 400 L0 400Z" fill="#1a2b47"/>
+            <path d="M0 340 C180 315 320 345 500 322 C700 298 860 340 1040 318 C1120 308 1170 315 1200 312 L1200 400 L0 400Z" fill="#0c1626"/>
+          </svg>
         </div>
-        <p class="small">Needs <a href="https://www.stremio.com/downloads">Stremio for Windows</a> (v5). Already installed? <a href="stremio:///">Open Stremio</a></p>
-
-        <div class="cmd" id="cmd" aria-live="polite">
-          <div class="cmd-box">
-            <code id="cmd-text">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</code>
-            <button class="copy-mini" id="copy-again" type="button">Copy</button>
+        <div class="credits-window">
+          <div class="credits" id="credits">
+            <span><b>Opening theme</b>Somebody with great taste</span>
+            <span><b>Key animation</b>A team that worked very hard</span>
+            <span><b>Background art</b>The hills you just saw</span>
+            <span><b>Skip button</b>You, next time</span>
           </div>
-          <ol class="steps-inline">
-            <li>The command is <b>copied</b>. Press <kbd>Win</kbd> + <kbd>X</kbd> and open <b>Terminal</b> (or PowerShell).</li>
-            <li>Paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> and press <kbd>Enter</kbd>.</li>
-            <li>Click <b>Yes</b> on the Windows prompt. Stremio opens with Skip Intro ready.</li>
-          </ol>
+        </div>
+        <div class="card"><span id="next-card">Next time: Episode 29</span></div>
+      </div>
+
+      <p class="sub" id="sub" aria-hidden="true"></p>
+
+      <div class="chrome">
+        <div class="title" aria-hidden="true">Your show<span id="ep-label">Season 1, Episode 28</span></div>
+        <div class="controls">
+          <button class="pp" id="pp" type="button" aria-label="Pause demo">
+            <svg id="pp-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+          </button>
+          <div class="track" aria-hidden="true">
+            <div class="seg intro" id="seg-intro"></div>
+            <div class="seg credits" id="seg-credits"></div>
+            <div class="fill" id="fill"></div>
+            <div class="head" id="head"></div>
+          </div>
+          <span class="time" id="time" aria-hidden="true">00:00 / 24:00</span>
         </div>
       </div>
 
-      <div class="player" role="img" aria-label="Preview: a Skip Intro button over a playing episode">
-        <div class="p-title">Episode 1 · Opening</div>
-        <div class="p-bar"><s></s><i></i></div>
-        <div class="p-skip"><span>Skip Intro</span></div>
+      <div class="skips" id="skips"></div>
+      <div class="flash" id="flash"></div>
+    </div>
+
+    <!-- Install -->
+    <div class="lead">
+      <div>
+        <h1>Skip intros in Stremio.</h1>
+        <p>Netflix-style Skip Intro and Next Episode buttons for the Stremio desktop app on Windows. Made for anime, and it works for any series that has timestamps on AniSkip or TheIntroDB.</p>
+      </div>
+      <div class="get">
+        <button class="copy" id="copy" type="button">
+          <span class="idle">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M8 8h11v12H8zM5 16V4h11"/></svg>
+            Copy install command
+          </span>
+          <span class="done">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+            Copied. Paste it in Terminal
+          </span>
+        </button>
+        <div class="term" id="term"><span class="ps">PS&gt;</span><span id="cmd">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</span></div>
+        <p class="fine">Prefer a file? <a href="install.bat" download>Download install.bat</a> and double-click it. Needs the <a href="https://www.stremio.com/downloads">Stremio app for Windows</a>. Already installed? <a href="stremio:///">Open Stremio</a>.</p>
+        <p class="sr-only" id="live" aria-live="polite"></p>
       </div>
     </div>
 
-    <section id="how">
-      <h2>What you get</h2>
-      <p class="sub">The buttons show up at the right moment, bottom-right, and move up when the player controls are visible. <kbd>Enter</kbd> presses them.</p>
-      <table>
-        <thead><tr><th>While playing</th><th>You see</th></tr></thead>
-        <tbody>
-          <tr><td>"Previously on…"</td><td><span class="tag">Skip Recap</span></td></tr>
-          <tr><td>Intro / anime opening</td><td><span class="tag">Skip Intro</span></td></tr>
-          <tr><td>End credits / anime ending</td><td><span class="tag">Watch Credits</span> <span class="tag solid">▶ Next Episode</span></td></tr>
-          <tr><td>Credits followed by a post-credits scene</td><td><span class="tag">Skip Credits</span> <span class="tag solid">▶ Next Episode</span></td></tr>
-          <tr><td>Next-episode preview</td><td><span class="tag">Skip Preview</span></td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section>
-      <h2>Install in three steps</h2>
-      <p class="sub">One command, one "Yes", done.</p>
-      <div class="grid">
-        <div class="card"><div class="num">1</div><h3>Click Install</h3><p>This copies a one-line installer. You can also download <a href="install.bat">install.bat</a> and double-click it.</p></div>
-        <div class="card"><div class="num">2</div><h3>Paste in Terminal</h3><p>Press <kbd>Win</kbd> + <kbd>X</kbd>, open Terminal, paste and press Enter. Click <b>Yes</b> on the one admin prompt.</p></div>
-        <div class="card"><div class="num">3</div><h3>Watch</h3><p>Stremio restarts. Play an episode, and "Skip Intro" appears during the opening. Updates install themselves.</p></div>
+    <section aria-labelledby="see">
+      <h2 id="see">What you'll see</h2>
+      <p class="intro-copy">The buttons appear at the right moment, bottom-right, and stay out of the way the rest of the time. Press <kbd>Enter</kbd> to use the one on screen.</p>
+      <div class="map">
+        <div class="lane soft"></div><div class="lane hot"></div><div class="lane"></div><div class="lane soft"></div><div class="lane soft"></div>
+        <div class="what"><strong>Recap</strong><span class="pill ghost">Skip Recap</span></div>
+        <div class="what hot"><strong>Opening</strong><span class="pill ghost">Skip Intro</span></div>
+        <div class="what"><strong>The episode</strong><span class="none">Nothing. Just the show.</span></div>
+        <div class="what"><strong>Ending credits</strong><span class="pill ghost">Watch Credits</span><span class="pill solid">Next Episode</span></div>
+        <div class="what"><strong>Preview</strong><span class="pill ghost">Skip Preview</span></div>
       </div>
     </section>
 
-    <section id="faq">
-      <h2>FAQ</h2>
-      <details>
-        <summary>Why isn't this a normal one-click Stremio addon?</summary>
-        <p>Stremio addons can only provide catalogs, streams and subtitles. They can't put a button on the player or seek the video. So this is a small plugin that runs inside the Stremio app's page instead, and the installer sets that up.</p>
-      </details>
-      <details>
-        <summary>What exactly does the installer change?</summary>
-        <ul>
-          <li>Copies the plugin to <code>%LOCALAPPDATA%\StremioSkipIntro</code>.</li>
-          <li>Adds one Stremio-only WebView2 setting (needs the admin "Yes"). It opens a debugging port on <code>127.0.0.1:9334</code>, which only programs on your own PC can reach, so the plugin can be added to Stremio's page.</li>
-          <li>Adds a hidden "Stremio Skip Intro" helper to your Startup folder. When Stremio is open, the helper adds the plugin.</li>
-        </ul>
-        <p>Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own mpv player.</p>
-      </details>
-      <details>
-        <summary>Does it work for anime?</summary>
-        <p>Yes, anime comes first. The plugin maps Stremio's IMDb, Kitsu and MAL episode IDs to MyAnimeList entries, including split seasons and absolute numbering (e.g. One Piece). It then asks AniSkip for the opening and ending times, and TheIntroDB fills in recaps, credits and previews.</p>
-      </details>
-      <details>
-        <summary>No button showed up for my episode</summary>
-        <p>Nobody has submitted timestamps for that episode yet. The plugin only skips where AniSkip or TheIntroDB have data. You can add timestamps on those sites, and everyone benefits.</p>
-      </details>
-      <details>
-        <summary>How do I uninstall?</summary>
-        <p>Run this in Terminal and click Yes:</p>
-        <div class="cmd-box"><code>irm https://osamudazai666.github.io/stremio-skip-intro/uninstall.ps1 | iex</code></div>
-      </details>
-      <details>
-        <summary>Mac, Linux, Android TV?</summary>
-        <p>Not yet. The installer targets the Windows desktop app. On other desktops, the same plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a> (copy <code>skip-intro.plugin.js</code> into its plugins folder).</p>
-      </details>
+    <section aria-labelledby="install">
+      <h2 id="install">Install</h2>
+      <p class="intro-copy">About a minute, start to finish.</p>
+      <ol class="steps">
+        <li><strong>Copy the command</strong><p>Use the yellow button above, or download install.bat instead.</p></li>
+        <li><strong>Paste it in Terminal</strong><p>Press <kbd>Win</kbd> + <kbd>X</kbd>, open Terminal, paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> and press <kbd>Enter</kbd>.</p></li>
+        <li><strong>Click Yes</strong><p>Windows asks for permission once. Stremio restarts, and the next opening you hit has a Skip Intro button.</p></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="faq">
+      <h2 id="faq">Questions</h2>
+      <p class="intro-copy">What it changes, how to remove it, and why it isn't a regular addon.</p>
+      <div class="faq">
+        <details>
+          <summary>Why isn't this a one-click Stremio addon?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>Stremio addons can only provide catalogs, streams and subtitles. They can't put a button on the player or move the video forward. So this is a small plugin that runs inside the Stremio app's page instead, and the installer sets that up.</p></div>
+        </details>
+        <details>
+          <summary>What does the installer change on my PC?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div>
+            <ul>
+              <li>It copies the plugin to <code>%LOCALAPPDATA%\StremioSkipIntro</code>.</li>
+              <li>It adds one Windows setting that only affects Stremio. This is what the "Yes" prompt is for. It lets the plugin connect to Stremio through <code>127.0.0.1:9334</code>, which only programs on your own PC can reach.</li>
+              <li>It adds a hidden "Stremio Skip Intro" helper to your Startup folder. When Stremio is open, the helper adds the plugin, and it fetches updates from this project's GitHub.</li>
+            </ul>
+            <p>Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own player.</p>
+          </div>
+        </details>
+        <details>
+          <summary>Does it work for anime?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>That's what it was built for. It matches Stremio's episode IDs (IMDb, Kitsu or MyAnimeList) to the right MyAnimeList entry, including split seasons and long shows numbered straight through, like One Piece. AniSkip provides the opening and ending times, and TheIntroDB fills in recaps, credits and previews.</p></div>
+        </details>
+        <details>
+          <summary>No button showed up for my episode<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>That episode doesn't have timestamps on AniSkip or TheIntroDB yet. Anyone can submit them on those sites, and once they're added, everyone gets the button.</p></div>
+        </details>
+        <details>
+          <summary>How do I uninstall it?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>Paste this in Terminal and click Yes:</p><div class="term"><span class="ps">PS&gt;</span>irm https://osamudazai666.github.io/stremio-skip-intro/uninstall.ps1 | iex</div></div>
+        </details>
+        <details>
+          <summary>Mac, Linux or Android TV?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>Not yet. The installer is for the Windows app. On other computers, the same plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>: copy <code>skip-intro.plugin.js</code> into its plugins folder.</p></div>
+        </details>
+      </div>
     </section>
   </main>
 
   <footer>
-    Unofficial project, not affiliated with Stremio. Timestamps from <a href="https://aniskip.com">AniSkip</a> and <a href="https://theintrodb.org">TheIntroDB</a>.
-    Source on <a href="https://github.com/OsamuDazai666/stremio-skip-intro">GitHub</a>.
+    An unofficial project, not affiliated with Stremio. Timestamps come from <a href="https://aniskip.com">AniSkip</a> and <a href="https://theintrodb.org">TheIntroDB</a>. Open source under the MIT license.
   </footer>
 </div>
 
-<div class="toast" id="toast" role="status"></div>
-
 <script>
-  const cmdText = document.getElementById('cmd-text').textContent;
-  const toast = document.getElementById('toast');
-  let toastTimer;
-  function showToast(html) {
-    toast.innerHTML = html;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
-  }
-  async function copyCommand() {
+(() => {
+  // ---------- Install command ----------
+  const copyBtn = document.getElementById('copy');
+  const live = document.getElementById('live');
+  const cmd = document.getElementById('cmd').textContent;
+  let copiedTimer;
+  copyBtn.addEventListener('click', async () => {
     let ok = false;
-    try { await navigator.clipboard.writeText(cmdText); ok = true; } catch (_) {
+    try { await navigator.clipboard.writeText(cmd); ok = true; } catch (_) {
       const r = document.createRange();
-      r.selectNodeContents(document.getElementById('cmd-text'));
-      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      r.selectNodeContents(document.getElementById('cmd'));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
       try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
     }
-    document.getElementById('cmd').classList.add('show');
-    showToast(ok ? '<b>Copied!</b> Paste it into Terminal (Win + X → Terminal).' : 'Select the command below and copy it.');
+    if (ok) {
+      copyBtn.classList.add('copied');
+      live.textContent = 'Install command copied. Paste it in Terminal.';
+      clearTimeout(copiedTimer);
+      copiedTimer = setTimeout(() => copyBtn.classList.remove('copied'), 3500);
+    } else {
+      live.textContent = 'Copy failed. The command is selected; press Ctrl + C.';
+    }
+  });
+
+  // ---------- Player demo ----------
+  const DURATION = 1440; // a 24-minute episode, in "episode seconds"
+  const SEGS = [
+    { k: 'recap', a: 0, b: 75, rate: 16 },
+    { k: 'intro', a: 75, b: 165, rate: 10 },
+    { k: 'episode', a: 165, b: 1300, rate: 110 },
+    { k: 'credits', a: 1300, b: 1390, rate: 10 },
+    { k: 'preview', a: 1390, b: 1440, rate: 11 },
+  ];
+  const SUBS = [
+    { a: 4, b: 36, t: 'Previously: you sat through every second of it.' },
+    { a: 40, b: 72, t: 'Including the opening. Again.' },
+    { a: 78, b: 163, t: (s) => "You've seen this opening " + (s.ep - 1) + ' times.' },
+    { a: 166, b: 290, t: 'Back to the story.', when: (s) => s.skipped },
+    { a: 380, b: 540, t: 'Did you hear that?' },
+    { a: 620, b: 780, t: 'It came from beyond the hills.' },
+    { a: 930, b: 1090, t: 'Then we keep walking. Together.' },
+    { a: 1302, b: 1388, t: 'Credits. The next episode is one click away.' },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const player = $('player'), sub = $('sub'), skips = $('skips'), fill = $('fill'), head = $('head'), time = $('time');
+  const credits = $('credits'), flash = $('flash'), pp = $('pp'), ppIcon = $('pp-icon');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const state = { t: reduce ? 100 : 0, ep: 28, playing: !reduce, skipped: false, dismissed: false, visible: true };
+  const pct = (x) => (x / DURATION) * 100 + '%';
+  $('seg-intro').style.cssText = 'left:' + pct(75) + ';width:' + pct(90);
+  $('seg-credits').style.cssText = 'left:' + pct(1300) + ';width:' + pct(140);
+
+  const ICON_PLAY = '<path fill="currentColor" d="M7 4.5l13 7.5-13 7.5z"/>';
+  const ICON_PAUSE = '<path fill="currentColor" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>';
+  const ICON_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 4.5l12 7.5-12 7.5z"/></svg>';
+
+  const segAt = (t) => SEGS.find((s) => t >= s.a && t < s.b) || SEGS[SEGS.length - 1];
+  const mmss = (x) => { x = Math.floor(x); return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0'); };
+
+  function setPlaying(p) {
+    state.playing = p;
+    ppIcon.innerHTML = p ? ICON_PAUSE : ICON_PLAY;
+    pp.setAttribute('aria-label', p ? 'Pause demo' : 'Play demo');
   }
-  document.getElementById('install-btn').addEventListener('click', copyCommand);
-  document.getElementById('copy-again').addEventListener('click', copyCommand);
+
+  function doFlash() {
+    if (reduce) return;
+    flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+  }
+
+  function skipIntro() { state.t = 165; state.skipped = true; doFlash(); render(true); }
+  function watchCredits() { state.dismissed = true; render(true); }
+  function nextEpisode() {
+    state.ep += 1; state.t = 0; state.skipped = false; state.dismissed = false;
+    $('ep-label').textContent = 'Season 1, Episode ' + state.ep;
+    $('next-card').textContent = 'Next time: Episode ' + (state.ep + 1);
+    doFlash(); render(true);
+  }
+
+  let shownButtons = '';
+  function renderButtons(seg) {
+    let key = '';
+    if (seg.k === 'intro') key = 'intro';
+    else if ((seg.k === 'credits' || seg.k === 'preview') && !state.dismissed) key = 'end';
+    if (key === shownButtons) return;
+    const hadFocus = skips.contains(document.activeElement);
+    shownButtons = key;
+    skips.classList.toggle('on', !!key);
+    if (!key) { skips.innerHTML = ''; if (hadFocus) pp.focus(); return; }
+    if (key === 'intro') {
+      skips.innerHTML = '<button class="sbtn ghost" type="button" data-a="skip">Skip Intro</button>';
+    } else {
+      skips.innerHTML = '<button class="sbtn ghost" type="button" data-a="watch">Watch Credits</button>' +
+        '<button class="sbtn solid" type="button" data-a="next">' + ICON_NEXT + 'Next Episode</button>';
+    }
+  }
+  skips.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'skip') skipIntro(); else if (a === 'watch') watchCredits(); else if (a === 'next') nextEpisode();
+  });
+
+  let lastSub = null;
+  function render() {
+    const seg = segAt(state.t);
+    if (player.dataset.seg !== seg.k) player.dataset.seg = seg.k;
+    const p = state.t / DURATION;
+    fill.style.width = p * 100 + '%';
+    head.style.left = p * 100 + '%';
+    time.textContent = mmss(state.t) + ' / ' + mmss(DURATION);
+    const line = SUBS.find((s) => state.t >= s.a && state.t < s.b && (!s.when || s.when(state)));
+    const text = line ? (typeof line.t === 'function' ? line.t(state) : line.t) : '';
+    if (text !== lastSub) {
+      lastSub = text;
+      if (text) sub.textContent = text;
+      sub.classList.toggle('on', !!text);
+    }
+    if (seg.k === 'credits') {
+      // Roll from just below the window to just above it.
+      const k = (state.t - 1300) / 90;
+      const win = credits.parentElement.offsetHeight;
+      const y = win - k * (win + credits.offsetHeight);
+      credits.style.transform = 'translateY(' + y.toFixed(1) + 'px)';
+    }
+    renderButtons(seg);
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (state.playing && state.visible) {
+      state.t += dt * segAt(state.t).rate;
+      if (state.t >= DURATION) { nextEpisode(); }
+      render();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  pp.addEventListener('click', () => setPlaying(!state.playing));
+  document.addEventListener('visibilitychange', () => { state.visible = !document.hidden; });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((es) => { state.visible = es[0].isIntersecting && !document.hidden; }, { threshold: 0.15 }).observe(player);
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !skips.classList.contains('on')) return;
+    if (e.target && e.target.closest && e.target.closest('button, a, input, summary, textarea')) return;
+    const r = player.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+    e.preventDefault();
+    const btn = skips.querySelector('[data-a="next"]') || skips.querySelector('button');
+    if (btn) btn.click();
+  });
+
+  setPlaying(state.playing);
+  render();
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>
