@@ -31,7 +31,22 @@
   :focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; border-radius: 4px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  .page { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+  html, body { overflow-x: clip; }
+  .page { margin: 0 auto; padding: 0 clamp(20px, 4vw, 72px); }
+  /* One column, as wide as the screen allows while the 16:9 player still leaves the
+     install button above the fold. Text lines up with the player's edges. */
+  .page > * { width: min(100%, 1600px, max(720px, calc((100vh - 230px) * 16 / 9))); margin-inline: auto; }
+
+  /* The screen lights the room: a blurred glow in the demo's current colors. */
+  .stage { position: relative; isolation: isolate; }
+  .ambient { position: absolute; inset: -14% -26% -22%; z-index: -1; pointer-events: none; filter: blur(100px) saturate(1.25); opacity: .68; }
+  .ambient i { position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s ease; border-radius: 40%; }
+  .ambient .a-recap { background: radial-gradient(closest-side, #a5674f, #5a3747 60%, transparent); }
+  .ambient .a-intro { background: radial-gradient(closest-side at 60% 50%, #e4527a, #5a2a7a 55%, transparent); }
+  .ambient .a-episode { background: radial-gradient(closest-side, #2d4f86, #142a4d 60%, transparent); }
+  .ambient .a-credits { background: radial-gradient(closest-side, #1c2740, transparent); }
+  .stage[data-seg="recap"] .a-recap, .stage[data-seg="intro"] .a-intro, .stage[data-seg="episode"] .a-episode,
+  .stage[data-seg="credits"] .a-credits, .stage[data-seg="preview"] .a-credits { opacity: 1; }
 
   /* Top bar */
   .bar { display: flex; justify-content: space-between; align-items: center; padding: 22px 0 18px; font-size: 15px; }
@@ -193,6 +208,18 @@
 
   /* Toast-free copy feedback: the button itself confirms. Live region for screen readers. */
 
+  /* Wide screens: section heading on the left, content on the right. */
+  @media (min-width: 1200px) {
+    section { display: grid; grid-template-columns: minmax(240px, 1fr) 3fr; grid-template-rows: auto 1fr; column-gap: 56px; align-items: start; }
+    section > h2, section > .intro-copy { grid-column: 1; }
+    section > h2 { margin-top: 2px; }
+    section > .intro-copy { margin-bottom: 0; font-size: 15px; }
+    section > .map, section > .steps, section > .faq { grid-column: 2; grid-row: 1 / span 2; }
+    .faq { max-width: none; }
+    h1 { font-size: clamp(44px, 3.4vw, 68px); }
+    body { font-size: 18px; }
+  }
+
   @media (max-width: 880px) {
     .lead { grid-template-columns: 1fr; gap: 28px; padding-top: 36px; }
     .steps { grid-template-columns: 1fr; }
@@ -231,6 +258,8 @@
 
   <main>
     <!-- Live demo -->
+    <div class="stage" id="stage" data-seg="recap">
+    <div class="ambient" aria-hidden="true"><i class="a-recap"></i><i class="a-intro"></i><i class="a-episode"></i><i class="a-credits"></i></div>
     <div class="player" id="player" data-seg="recap" role="region" aria-label="Demo: an episode plays and Skip Intro appears during the opening">
       <div class="scene" aria-hidden="true">
         <div class="sky"></div>
@@ -275,6 +304,7 @@
 
       <div class="skips" id="skips"></div>
       <div class="flash" id="flash"></div>
+    </div>
     </div>
 
     <!-- Install -->
@@ -413,7 +443,7 @@
   ];
 
   const $ = (id) => document.getElementById(id);
-  const player = $('player'), sub = $('sub'), skips = $('skips'), fill = $('fill'), head = $('head'), time = $('time');
+  const stage = $('stage'), player = $('player'), sub = $('sub'), skips = $('skips'), fill = $('fill'), head = $('head'), time = $('time');
   const credits = $('credits'), flash = $('flash'), pp = $('pp'), ppIcon = $('pp-icon');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -476,7 +506,7 @@
   let lastSub = null;
   function render() {
     const seg = segAt(state.t);
-    if (player.dataset.seg !== seg.k) player.dataset.seg = seg.k;
+    if (player.dataset.seg !== seg.k) { player.dataset.seg = seg.k; stage.dataset.seg = seg.k; }
     const p = state.t / DURATION;
     fill.style.width = p * 100 + '%';
     head.style.left = p * 100 + '%';
