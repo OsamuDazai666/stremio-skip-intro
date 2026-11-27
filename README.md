@@ -1,10 +1,12 @@
-# Skip Intro for Stremio (desktop)
+# Skip Intro for Stremio
 
 Netflix-style **Skip Intro**, **Skip Recap**, **Skip Credits** and **Next Episode** buttons for Stremio. It is built with anime in mind but works for any series or movie that has timestamps.
 
-A regular Stremio addon can't do this, because addons have no access to the player. So `skip-intro.plugin.js` runs inside Stremio's page instead. It works in two places:
+A regular Stremio addon can't do this, because addons have no access to the player. So `skip-intro.plugin.js` runs inside Stremio's page instead. It works in these places:
 
 - **Normal Stremio desktop (Windows, v5)**, where mpv plays the video. A small watcher adds the plugin to Stremio's page. See below.
+- **The official Stremio app for macOS**, through a small launcher app.
+- **The Stremio app for Android phones**, through a [Morphe](https://morphe.software) patch (in `android/`). The phone app is native, so it gets its own Java version of the same lookup.
 - **[Stremio Enhanced](https://github.com/REVENGE977/stremio-enhanced)**, which has a built-in plugin system. Note that its Chromium player can't play some files, such as HEVC 10-bit MKV.
 
 ## Install: normal Stremio (Windows)
@@ -68,6 +70,28 @@ curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-mac.sh |
 ```
 
 **Development:** build with `macos/build.sh`, which needs the Xcode Command Line Tools. `macos/dev-launch.sh` starts Stremio in developer mode: debug log, Safari Web Inspector, and an eval channel used by `macos/dev-eval.sh`.
+
+## Install: Android (Stremio app)
+
+1. Install [Morphe Manager](https://morphe.software) on the phone.
+2. Add this repository as a patch source: open **https://morphe.software/add-source?github=OsamuDazai666/stremio-skip-intro** on the phone, or in Morphe Manager go to **Sources → +** and paste `https://github.com/OsamuDazai666/stremio-skip-intro`.
+3. Pick **Stremio**, keep **Skip Intro** selected, and tap **Patch**. Use the Stremio phone app **2.6.1** (APK from [stremio.com/downloads](https://www.stremio.com/downloads)). Newer versions are listed as experimental until they're checked.
+4. Morphe installs the patched app in place of yours (Android needs the original uninstalled first). Sign in again afterwards.
+
+**How it works:**
+- Stremio's Android player already has a Skip Intro / credits overlay. It's fed by `Player.introOutro` from Stremio's core, and it's shown only to Stremio Premium accounts.
+- The patch hooks the player's view model, so AniSkip / TheIntroDB times (looked up the same way as on desktop, including the anime id mapping) fill `introOutro` when Stremio has none.
+- Stremio's plain overlay is hidden, and Netflix-style buttons are drawn on top of the player instead:
+  - **Skip Intro** (or **Skip Recap**) for the whole intro.
+  - **Watch Credits** and **▶ Next Episode** at the credits. With binge watching on, Next Episode counts down for 10 s.
+- The buttons run Stremio's own seek and play-next actions.
+- Stremio's own Premium timestamps still need Premium: accounts without it only ever get the AniSkip / TheIntroDB times.
+
+**Tested** on a Samsung Galaxy A06 (Android 16) with Stremio 2.6.1: intro skip, credits, and next episode.
+
+To uninstall, uninstall the patched Stremio and install Stremio again from Google Play.
+
+**Development:** `android/` is a Morphe patches project (GPL-3.0, from Morphe's template). The patch is in `android/patches`, and the Java code it adds to Stremio is in `android/extensions`. The **Android patches** GitHub Actions workflow builds the `.mpp` bundle on every push. Pushing a tag `android-vX.Y.Z` publishes a release and points `patches-bundle.json` (read by Morphe Manager) at it.
 
 ## Install: Stremio Enhanced
 
@@ -143,7 +167,7 @@ SkipIntro.settings      // effective settings
 ```
 
 ## Known limitations
-- **Desktop only:** normal Stremio on Windows (through the watcher), or Stremio Enhanced. The plan for Android TV and mobile, using a stream-wrapper addon, is in `PLAN.md`.
+- **Platforms:** Windows, macOS, Android phones (Stremio 2.6.1) and Stremio Enhanced. Not Android TV or iOS yet.
 - **Stremio updates:** in normal Stremio, the plugin depends on Stremio Web's shell message format. A Stremio update that changes that format would stop skipping from working, but playback itself would not be affected.
 - When neither AniSkip nor TheIntroDB has timestamps for an episode, no button appears. Contributing timestamps from inside the player is planned.
 - Stremio's CSS class names are hashed, so the plugin finds elements by class *substring* (`player-container`, `overlayHidden`). A big Stremio Web redesign could need selector updates.
