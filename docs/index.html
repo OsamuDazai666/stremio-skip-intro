@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Skip Intro for Stremio</title>
-<meta name="description" content="Netflix-style Skip Intro and Next Episode buttons for the Stremio app on Windows, macOS and Android. Made for anime, works for any series.">
+<meta name="description" content="Netflix-style Skip Intro and Next Episode buttons for the Stremio app on Windows, macOS, Linux and Android. Made for anime, works for any series.">
 <meta name="theme-color" content="#0E1A2B">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230E1A2B'/%3E%3Cpath fill='%23FFE14A' d='M6 7l6 5-6 5zM12 7l6 5-6 5z'/%3E%3C/svg%3E">
 <style>
@@ -349,12 +349,13 @@
     <div class="lead">
       <div>
         <h1>Skip intros in Stremio.</h1>
-        <p>Netflix-style Skip Intro and Next Episode buttons for the Stremio app on Windows, macOS and Android. Made for anime, and it works for any series that has timestamps on AniSkip or TheIntroDB.</p>
+        <p>Netflix-style Skip Intro and Next Episode buttons for the Stremio app on Windows, macOS, Linux and Android. Made for anime, and it works for any series that has timestamps on AniSkip or TheIntroDB.</p>
       </div>
       <div class="get">
         <div class="os" role="radiogroup" aria-label="Your device">
           <button type="button" role="radio" aria-checked="true" data-os="win">Windows</button>
           <button type="button" role="radio" aria-checked="false" data-os="mac">macOS</button>
+          <button type="button" role="radio" aria-checked="false" data-os="linux">Linux</button>
           <button type="button" role="radio" aria-checked="false" data-os="android">Android</button>
         </div>
         <div class="stack cta">
@@ -379,11 +380,13 @@
         <div class="term stack" id="term">
           <div class="cmdline" data-for="win"><span class="ps">PS&gt;</span><span class="cmd">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</span></div>
           <div class="cmdline off" data-for="mac"><span class="ps">%</span><span class="cmd">curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-mac.sh | bash</span></div>
+          <div class="cmdline off" data-for="linux"><span class="ps">$</span><span class="cmd">curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-linux.sh | bash</span></div>
           <div class="cmdline off" data-for="android"><span class="ps">Morphe source:</span><span class="cmd">https://github.com/OsamuDazai666/stremio-skip-intro</span></div>
         </div>
         <div class="stack">
           <p class="fine" data-for="win">Prefer a file? <a href="install.bat" download>Download install.bat</a> and double-click it. Needs the <a href="https://www.stremio.com/downloads">Stremio app for Windows</a>. Already installed? <a href="stremio:///">Open Stremio</a>.</p>
           <p class="fine off" data-for="mac">Paste it in Terminal. Needs the official <a href="https://www.stremio.com/downloads">Stremio app for Mac</a>. Then open Stremio with the new <b>Stremio Skip Intro</b> app.</p>
+          <p class="fine off" data-for="linux">Paste it in a terminal. Needs the official <a href="https://flathub.org/apps/com.stremio.Stremio">Stremio app from Flathub</a>. Then open Stremio as usual, from your app menu.</p>
           <p class="fine off" data-for="android">Open this page on your phone and tap the button. Needs <a href="https://morphe.software">Morphe Manager</a> and the <a href="https://www.stremio.com/downloads">Stremio app for Android</a> 2.6.1.</p>
         </div>
         <p class="sr-only" id="live" aria-live="polite"></p>
@@ -418,6 +421,11 @@
         <li><strong>Paste it in Terminal</strong><p>Press <kbd>Cmd</kbd> + <kbd>Space</kbd>, type Terminal, paste with <kbd>Cmd</kbd> + <kbd>V</kbd> and press <kbd>Return</kbd>.</p></li>
         <li><strong>Open the app</strong><p>The installer opens it for you. From now on, start Stremio with this app, and keep it in your Dock.</p></li>
       </ol>
+      <ol class="steps off" data-for="linux">
+        <li><strong>Copy the command</strong><p>Use the yellow button above, with Linux selected in the switch.</p></li>
+        <li><strong>Paste it in a terminal</strong><p>Open a terminal, paste with <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> and press <kbd>Enter</kbd>. No password needed.</p></li>
+        <li><strong>Open Stremio</strong><p>Open it from your app menu as usual. If Stremio was already open, close it and open it again.</p></li>
+      </ol>
       <ol class="steps off" data-for="android">
         <li><strong>Get Morphe Manager</strong><p>Install it from <a href="https://morphe.software">morphe.software</a>, the app that patches Stremio.</p></li>
         <li><strong>Add this source</strong><p>Tap the yellow button above on your phone, or paste the source link in Sources and tap +.</p></li>
@@ -439,12 +447,16 @@
           <p>The official Stremio for Mac (5.1). Tested on macOS 27, Apple Silicon. Intel Macs get the same build, but it hasn't been tested on one yet.</p>
         </div>
         <div class="plat ok">
+          <strong>Linux</strong><span class="state">Works</span>
+          <p>The official Stremio Flatpak (1.3), on any distro with Flatpak. Tested on Ubuntu 26.04 (in WSL). The ARM build is included but not yet tested.</p>
+        </div>
+        <div class="plat ok">
           <strong>Android phones</strong><span class="state">Works</span>
           <p>Stremio for Android 2.6.1, patched with Morphe Manager. Tested on Android 16. Newer Stremio versions are marked experimental until checked.</p>
         </div>
         <div class="plat no">
-          <strong>Linux, Android TV, iOS</strong><span class="state">Not yet</span>
-          <p>On Linux, the plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>. For Android TV, try the community <a href="https://github.com/tikkamasalla/stremio-morphe-patches">stremio-morphe-patches</a>. Nothing for iOS yet.</p>
+          <strong>Android TV, iOS</strong><span class="state">Not yet</span>
+          <p>For Android TV, try the community <a href="https://github.com/tikkamasalla/stremio-morphe-patches">stremio-morphe-patches</a>. There's nothing for iPhone or iPad yet.</p>
         </div>
       </div>
     </section>
@@ -471,7 +483,13 @@
               <li>It copies the plugin and a small helper library to <code>~/Library/Application Support/StremioSkipIntro</code>.</li>
               <li>It creates a <b>Stremio Skip Intro</b> app. That app opens the official Stremio with the helper loaded (which Stremio's own code signature allows), and the helper adds the plugin to Stremio's page. It also fetches plugin updates.</li>
             </ul>
-            <p>On both, Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own player.</p>
+            <p><b>Linux:</b></p>
+            <ul>
+              <li>It copies the plugin and a small helper library to Stremio's own Flatpak folder, <code>~/.var/app/com.stremio.Stremio/data/stremio-skip-intro</code>.</li>
+              <li>It adds one per-user Flatpak setting for Stremio that loads the helper when Stremio starts, and the helper adds the plugin to Stremio's page. No sudo needed.</li>
+              <li>It adds a systemd user timer that fetches plugin updates every 6 hours.</li>
+            </ul>
+            <p>On all three, Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own player.</p>
             <p><b>Android:</b> Morphe Manager rebuilds the Stremio app with the Skip Intro patch and installs it in place of yours. The patch adds the timestamp lookup and the buttons to Stremio's player, and nothing else. Stremio Premium features stay Premium.</p>
           </div>
         </details>
@@ -488,6 +506,7 @@
           <div>
             <p><b>Windows:</b> paste this in Terminal and click Yes:</p><div class="term"><span class="ps">PS&gt;</span>irm https://osamudazai666.github.io/stremio-skip-intro/uninstall.ps1 | iex</div>
             <p style="margin-top:14px"><b>macOS:</b> paste this in Terminal:</p><div class="term"><span class="ps">%</span>curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-mac.sh | bash</div>
+            <p style="margin-top:14px"><b>Linux:</b> paste this in a terminal:</p><div class="term"><span class="ps">$</span>curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-linux.sh | bash</div>
             <p style="margin-top:14px"><b>Android:</b> uninstall the patched Stremio and install Stremio again from Google Play.</p>
           </div>
         </details>
@@ -496,8 +515,8 @@
           <div><p>The helper can only be added when Stremio starts. The Stremio Skip Intro app starts Stremio with it (and restarts Stremio if it was already open without it). If you open Stremio the usual way, it works as normal, just without the skip buttons.</p></div>
         </details>
         <details>
-          <summary>Linux or Android TV?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
-          <div><p>Not from this project yet. On Linux, the same plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>: copy <code>skip-intro.plugin.js</code> into its plugins folder. For Android TV, the community <a href="https://github.com/tikkamasalla/stremio-morphe-patches">stremio-morphe-patches</a> project adds skip buttons to Stremio's TV player.</p></div>
+          <summary>Android TV, iPhone, or Linux without Flatpak?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>Not from this project yet. For Android TV, the community <a href="https://github.com/tikkamasalla/stremio-morphe-patches">stremio-morphe-patches</a> project adds skip buttons to Stremio's TV player. There's nothing for iPhone or iPad yet. On Linux without the Flatpak (for example the older Stremio 4 packages), the plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>: copy <code>skip-intro.plugin.js</code> into its plugins folder.</p></div>
         </details>
       </div>
     </section>
@@ -529,7 +548,8 @@
   const platform = navigator.userAgentData ? navigator.userAgentData.platform : navigator.platform || '';
   const isAndroid = /Android/i.test(navigator.userAgent) || /Android/i.test(platform);
   const isMac = !isAndroid && /Mac/i.test(platform || navigator.userAgent);
-  setOs(isAndroid ? 'android' : isMac ? 'mac' : 'win');
+  const isLinux = !isAndroid && !isMac && /Linux/i.test(platform || navigator.userAgent);
+  setOs(isAndroid ? 'android' : isMac ? 'mac' : isLinux ? 'linux' : 'win');
 
   let copiedTimer;
   copyBtn.addEventListener('click', async () => {

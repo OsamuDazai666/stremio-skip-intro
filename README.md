@@ -6,6 +6,7 @@ A regular Stremio addon can't do this, because addons have no access to the play
 
 - **Normal Stremio desktop (Windows, v5)**, where mpv plays the video. A small watcher adds the plugin to Stremio's page. See below.
 - **The official Stremio app for macOS**, through a small launcher app.
+- **The official Stremio app for Linux** (Flatpak), through a small helper library that Flatpak loads into it.
 - **The Stremio app for Android phones**, through a [Morphe](https://morphe.software) patch (in `android/`). The phone app is native, so it gets its own Java version of the same lookup.
 - **[Stremio Enhanced](https://github.com/REVENGE977/stremio-enhanced)**, which has a built-in plugin system. Note that its Chromium player can't play some files, such as HEVC 10-bit MKV.
 
@@ -70,6 +71,35 @@ curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-mac.sh |
 ```
 
 **Development:** build with `macos/build.sh`, which needs the Xcode Command Line Tools. `macos/dev-launch.sh` starts Stremio in developer mode: debug log, Safari Web Inspector, and an eval channel used by `macos/dev-eval.sh`.
+
+## Install: Linux (official Stremio Flatpak)
+
+```bash
+curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-linux.sh | bash
+```
+
+No sudo is needed. You need the official Stremio app from Flathub (`flatpak install flathub com.stremio.Stremio`). Afterwards, open Stremio as usual.
+
+**How it works:**
+- Stremio for Linux ([stremio-linux-shell](https://github.com/Stremio/stremio-linux-shell)) is GTK4 + WebKitGTK + libmpv. It adds its IPC bridge to the page with `webkit_user_content_manager_add_script()`.
+- `linux/libskipintro.so` replaces that function through `LD_PRELOAD`. When Stremio adds its bridge, the library adds `skip-intro.plugin.js` to the same page. It does nothing in any other process.
+- The installer puts the files in Stremio's own Flatpak data folder, `~/.var/app/com.stremio.Stremio/data/stremio-skip-intro`. It then sets `LD_PRELOAD` with a per-user `flatpak override`, so Stremio loads the helper however you open it. The Stremio app isn't modified.
+- On Linux, Stremio's page talks to mpv through the same `chrome.webview` bridge as on Windows and macOS, so the plugin needs no changes.
+- A systemd user timer fetches plugin updates every 6 hours.
+
+**Tested** with Stremio 1.3.0 (Flatpak) on Ubuntu 26.04 in WSL: the plugin loads, Skip Intro seeks mpv, and Next Episode works. The library is built for x86_64 and aarch64, but the ARM build hasn't been run yet. The older Qt-based Stremio 4 packages aren't supported; use Stremio Enhanced there.
+
+To uninstall:
+
+```bash
+curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-linux.sh | bash
+```
+
+**Development:** `linux/build.sh` builds the library (gcc, plus gcc-aarch64-linux-gnu for ARM). The **Linux helper** GitHub Actions workflow builds it on every change, then tests it against the real Stremio Flatpak on a virtual screen:
+- `linux/dev-test.js` checks, from inside the page, that the plugin is loaded, the mpv bridge is hooked, an mpv event arrives, the AniSkip lookup works and the anime map works.
+- `install-linux.sh` and `uninstall-linux.sh` run end to end.
+
+The libraries committed in `linux/` are the ones that workflow built, and the installer checks their SHA-256.
 
 ## Install: Android (Stremio app)
 
@@ -167,7 +197,7 @@ SkipIntro.settings      // effective settings
 ```
 
 ## Known limitations
-- **Platforms:** Windows, macOS, Android phones (Stremio 2.6.1) and Stremio Enhanced. Not Android TV or iOS yet.
+- **Platforms:** Windows, macOS, Linux (Stremio Flatpak), Android phones (Stremio 2.6.1) and Stremio Enhanced. Not Android TV or iOS yet.
 - **Stremio updates:** in normal Stremio, the plugin depends on Stremio Web's shell message format. A Stremio update that changes that format would stop skipping from working, but playback itself would not be affected.
 - When neither AniSkip nor TheIntroDB has timestamps for an episode, no button appears. Contributing timestamps from inside the player is planned.
 - Stremio's CSS class names are hashed, so the plugin finds elements by class *substring* (`player-container`, `overlayHidden`). A big Stremio Web redesign could need selector updates.
