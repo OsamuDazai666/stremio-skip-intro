@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Skip Intro for Stremio</title>
-<meta name="description" content="Netflix-style Skip Intro and Next Episode buttons for the Stremio desktop app on Windows. Made for anime, works for any series.">
+<meta name="description" content="Netflix-style Skip Intro and Next Episode buttons for the Stremio desktop app on Windows and macOS. Made for anime, works for any series.">
 <meta name="theme-color" content="#0E1A2B">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230E1A2B'/%3E%3Cpath fill='%23FFE14A' d='M6 7l6 5-6 5zM12 7l6 5-6 5z'/%3E%3C/svg%3E">
 <style>
@@ -147,6 +147,22 @@
   h1 { font: 700 clamp(34px, 4.6vw, 54px)/1.04 var(--body-font); letter-spacing: -.025em; margin: 0 0 16px; text-wrap: balance; }
   .lead p { margin: 0; color: var(--mist); max-width: 34em; }
   .get { padding-top: 6px; }
+  [hidden] { display: none !important; }
+
+  /* Windows / macOS switch */
+  .os { display: flex; width: max-content; padding: 3px; margin-bottom: 16px; border-radius: 8px; background: #0A1220; border: 1px solid var(--line); }
+  .os button { border: 0; background: transparent; color: var(--mist); font: 600 14px/1 var(--body-font); padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  .os button:hover { color: var(--paper); }
+  .os button[aria-checked="true"] { background: var(--theater-2); color: var(--paper); box-shadow: inset 0 0 0 1px #2E4366; }
+
+  /* Platform status */
+  .support { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+  .plat { padding: 20px 28px 22px 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; column-gap: 12px; align-items: baseline; }
+  .plat strong { font-size: 17px; }
+  .plat .state { font: 650 13px/1 var(--body-font); padding: 5px 9px; border-radius: 4px; white-space: nowrap; }
+  .plat.ok .state { color: #14110a; background: var(--yellow); }
+  .plat.no .state { color: var(--mist); border: 1px solid #2E4366; }
+  .plat p { grid-column: 1 / -1; margin: 8px 0 0; color: var(--mist); font-size: 15px; max-width: 46ch; }
   .copy { display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer; padding: 15px 24px 15px 20px; border-radius: 8px;
     background: var(--yellow); color: #14110a; font: 700 17px/1 var(--body-font); box-shadow: 0 10px 30px -12px rgba(255, 225, 74, .55);
     transition: transform .1s ease, background-color .15s ease; }
@@ -216,7 +232,7 @@
     section > h2, section > .intro-copy { grid-column: 1; }
     section > h2 { margin-top: 2px; }
     section > .intro-copy { margin-bottom: 0; font-size: 15px; }
-    section > .map, section > .steps, section > .faq { grid-column: 2; grid-row: 1 / span 2; }
+    section > .map, section > .steps, section > .faq, section > .support { grid-column: 2; grid-row: 1 / span 2; }
     .faq { max-width: none; }
     h1 { font-size: clamp(44px, 3.4vw, 68px); }
     body { font-size: 18px; }
@@ -225,6 +241,8 @@
   @media (max-width: 880px) {
     .lead { grid-template-columns: 1fr; gap: 28px; padding-top: 36px; }
     .steps { grid-template-columns: 1fr; }
+    .support { grid-template-columns: 1fr; }
+    .plat { padding-right: 0; }
     .steps li { padding-right: 0; padding-bottom: 8px; }
     /* Stacked: the seek bar turns vertical. One continuous track runs down the
        episode, timestamps on the left, what appears on the right. */
@@ -325,9 +343,13 @@
     <div class="lead">
       <div>
         <h1>Skip intros in Stremio.</h1>
-        <p>Netflix-style Skip Intro and Next Episode buttons for the Stremio desktop app on Windows. Made for anime, and it works for any series that has timestamps on AniSkip or TheIntroDB.</p>
+        <p>Netflix-style Skip Intro and Next Episode buttons for the Stremio desktop app on Windows and macOS. Made for anime, and it works for any series that has timestamps on AniSkip or TheIntroDB.</p>
       </div>
       <div class="get">
+        <div class="os" role="radiogroup" aria-label="Your computer">
+          <button type="button" role="radio" aria-checked="true" data-os="win">Windows</button>
+          <button type="button" role="radio" aria-checked="false" data-os="mac">macOS</button>
+        </div>
         <button class="copy" id="copy" type="button">
           <span class="idle">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M8 8h11v12H8zM5 16V4h11"/></svg>
@@ -338,8 +360,9 @@
             Copied. Paste it in Terminal
           </span>
         </button>
-        <div class="term" id="term"><span class="ps">PS&gt;</span><span id="cmd">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</span></div>
-        <p class="fine">Prefer a file? <a href="install.bat" download>Download install.bat</a> and double-click it. Needs the <a href="https://www.stremio.com/downloads">Stremio app for Windows</a>. Already installed? <a href="stremio:///">Open Stremio</a>.</p>
+        <div class="term" id="term"><span class="ps" id="prompt">PS&gt;</span><span id="cmd">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</span></div>
+        <p class="fine" data-for="win">Prefer a file? <a href="install.bat" download>Download install.bat</a> and double-click it. Needs the <a href="https://www.stremio.com/downloads">Stremio app for Windows</a>. Already installed? <a href="stremio:///">Open Stremio</a>.</p>
+        <p class="fine" data-for="mac" hidden>Paste it in Terminal (<kbd>Cmd</kbd> + <kbd>Space</kbd>, type Terminal). No admin password needed. Needs the official <a href="https://www.stremio.com/downloads">Stremio app for Mac</a>. Afterwards, open Stremio with the new <b>Stremio Skip Intro</b> app.</p>
         <p class="sr-only" id="live" aria-live="polite"></p>
       </div>
     </div>
@@ -361,11 +384,39 @@
     <section aria-labelledby="install">
       <h2 id="install">Install</h2>
       <p class="intro-copy">About a minute, start to finish.</p>
-      <ol class="steps">
+      <ol class="steps" data-for="win">
         <li><strong>Copy the command</strong><p>Use the yellow button above, or download install.bat instead.</p></li>
         <li><strong>Paste it in Terminal</strong><p>Press <kbd>Win</kbd> + <kbd>X</kbd>, open Terminal, paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> and press <kbd>Enter</kbd>.</p></li>
         <li><strong>Click Yes</strong><p>Windows asks for permission once. Stremio restarts, and the next opening you hit has a Skip Intro button.</p></li>
       </ol>
+      <ol class="steps" data-for="mac" hidden>
+        <li><strong>Copy the command</strong><p>Use the yellow button above, with macOS selected.</p></li>
+        <li><strong>Paste it in Terminal</strong><p>Press <kbd>Cmd</kbd> + <kbd>Space</kbd>, type Terminal, paste with <kbd>Cmd</kbd> + <kbd>V</kbd> and press <kbd>Return</kbd>. No password needed.</p></li>
+        <li><strong>Open Stremio Skip Intro</strong><p>The installer opens it for you. From then on, start Stremio with the <b>Stremio Skip Intro</b> app (put it in your Dock instead of Stremio).</p></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="where">
+      <h2 id="where">Where it works</h2>
+      <p class="intro-copy">Tested on real machines with real episodes. Last checked November 2026.</p>
+      <div class="support">
+        <div class="plat ok">
+          <strong>Windows</strong><span class="state">Works</span>
+          <p>Stremio for Windows (v5). Tested on Windows 10 with Stremio's own player.</p>
+        </div>
+        <div class="plat ok">
+          <strong>macOS</strong><span class="state">Works</span>
+          <p>The official Stremio for Mac (5.1). Tested on macOS 27, Apple Silicon. Intel Macs get the same build, but it hasn't been tested on one yet.</p>
+        </div>
+        <div class="plat no">
+          <strong>Android &amp; Android TV</strong><span class="state">Not yet</span>
+          <p>The Stremio Android app has no page to add a plugin to. The community <a href="https://github.com/tikkamasalla/stremio-morphe-patches">stremio-morphe-patches</a> project adds skip buttons there.</p>
+        </div>
+        <div class="plat no">
+          <strong>Linux, iPhone, iPad</strong><span class="state">Not yet</span>
+          <p>On Linux, the plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>. There's no option for iOS yet.</p>
+        </div>
+      </div>
     </section>
 
     <section aria-labelledby="faq">
@@ -377,14 +428,20 @@
           <div><p>Stremio addons can only provide catalogs, streams and subtitles. They can't put a button on the player or move the video forward. So this is a small plugin that runs inside the Stremio app's page instead, and the installer sets that up.</p></div>
         </details>
         <details>
-          <summary>What does the installer change on my PC?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <summary>What does the installer change on my computer?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
           <div>
+            <p><b>Windows:</b></p>
             <ul>
               <li>It copies the plugin to <code>%LOCALAPPDATA%\StremioSkipIntro</code>.</li>
               <li>It adds one Windows setting that only affects Stremio. This is what the "Yes" prompt is for. It lets the plugin connect to Stremio through <code>127.0.0.1:9334</code>, which only programs on your own PC can reach.</li>
               <li>It adds a hidden "Stremio Skip Intro" helper to your Startup folder. When Stremio is open, the helper adds the plugin, and it fetches updates from this project's GitHub.</li>
             </ul>
-            <p>Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own player.</p>
+            <p><b>macOS:</b></p>
+            <ul>
+              <li>It copies the plugin and a small helper library to <code>~/Library/Application Support/StremioSkipIntro</code>.</li>
+              <li>It creates a <b>Stremio Skip Intro</b> app. That app opens the official Stremio with the helper loaded (which Stremio's own code signature allows), and the helper adds the plugin to Stremio's page. It also fetches plugin updates.</li>
+            </ul>
+            <p>On both, Stremio itself isn't modified. It still loads web.stremio.com and plays everything through its own player.</p>
           </div>
         </details>
         <details>
@@ -397,11 +454,18 @@
         </details>
         <details>
           <summary>How do I uninstall it?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
-          <div><p>Paste this in Terminal and click Yes:</p><div class="term"><span class="ps">PS&gt;</span>irm https://osamudazai666.github.io/stremio-skip-intro/uninstall.ps1 | iex</div></div>
+          <div>
+            <p><b>Windows:</b> paste this in Terminal and click Yes:</p><div class="term"><span class="ps">PS&gt;</span>irm https://osamudazai666.github.io/stremio-skip-intro/uninstall.ps1 | iex</div>
+            <p style="margin-top:14px"><b>macOS:</b> paste this in Terminal:</p><div class="term"><span class="ps">%</span>curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-mac.sh | bash</div>
+          </div>
         </details>
         <details>
-          <summary>Mac, Linux or Android TV?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
-          <div><p>Not yet. The installer is for the Windows app. On other computers, the same plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>: copy <code>skip-intro.plugin.js</code> into its plugins folder.</p></div>
+          <summary>Why do I open "Stremio Skip Intro" on a Mac instead of Stremio?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>The helper can only be added when Stremio starts. The Stremio Skip Intro app starts Stremio with it (and restarts Stremio if it was already open without it). If you open Stremio the usual way, it works as normal, just without the skip buttons.</p></div>
+        </details>
+        <details>
+          <summary>Linux, Android or Android TV?<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M6 9l6 6 6-6"/></svg></summary>
+          <div><p>Not from this project yet. On Linux, the same plugin works in <a href="https://github.com/REVENGE977/stremio-enhanced">Stremio Enhanced</a>: copy <code>skip-intro.plugin.js</code> into its plugins folder. For Android and Android TV, the community <a href="https://github.com/tikkamasalla/stremio-morphe-patches">stremio-morphe-patches</a> project adds skip buttons to Stremio's own player.</p></div>
         </details>
       </div>
     </section>
@@ -417,9 +481,26 @@
   // ---------- Install command ----------
   const copyBtn = document.getElementById('copy');
   const live = document.getElementById('live');
-  const cmd = document.getElementById('cmd').textContent;
+  const cmdEl = document.getElementById('cmd');
+  const promptEl = document.getElementById('prompt');
+  const COMMANDS = {
+    win: { prompt: 'PS>', cmd: 'irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex' },
+    mac: { prompt: '%', cmd: 'curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-mac.sh | bash' },
+  };
+  function setOs(os) {
+    cmdEl.textContent = COMMANDS[os].cmd;
+    promptEl.textContent = COMMANDS[os].prompt;
+    document.querySelectorAll('.os [data-os]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.os === os)));
+    document.querySelectorAll('[data-for]').forEach((el) => { el.hidden = el.dataset.for !== os; });
+    copyBtn.classList.remove('copied');
+  }
+  document.querySelectorAll('.os [data-os]').forEach((b) => b.addEventListener('click', () => setOs(b.dataset.os)));
+  const isMac = /Mac/i.test(navigator.userAgentData ? navigator.userAgentData.platform : navigator.platform || navigator.userAgent);
+  setOs(isMac ? 'mac' : 'win');
+
   let copiedTimer;
   copyBtn.addEventListener('click', async () => {
+    const cmd = cmdEl.textContent;
     let ok = false;
     try { await navigator.clipboard.writeText(cmd); ok = true; } catch (_) {
       const r = document.createRange();
@@ -433,7 +514,7 @@
       clearTimeout(copiedTimer);
       copiedTimer = setTimeout(() => copyBtn.classList.remove('copied'), 3500);
     } else {
-      live.textContent = 'Copy failed. The command is selected; press Ctrl + C.';
+      live.textContent = 'Copy failed. The command is selected; copy it with your keyboard.';
     }
   });
 

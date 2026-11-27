@@ -45,6 +45,30 @@ mpv's state comes back as `mpv-prop-change` events, which carry `time-pos`, `dur
 - **Seeking:** it sends `mpv-set-prop ["time-pos", t]`, the same message Stremio's own seek bar sends.
 - **Duration:** if the plugin was added after mpv reported the duration, it reads the total time from Stremio's seek bar instead.
 
+## Install: macOS (official Stremio app)
+
+```bash
+curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-mac.sh | bash
+```
+
+No admin rights are needed. Afterwards, open Stremio with the new **Stremio Skip Intro** app. Putting it in your Dock instead of Stremio works well.
+
+**How it works:**
+- Stremio for Mac is a WebKit view with libmpv, and its code signature allows `DYLD_INSERT_LIBRARIES` (`com.apple.security.cs.allow-dyld-environment-variables` and `disable-library-validation`).
+- The launcher starts the official `/Applications/Stremio.app` with `macos/SkipIntroInject.dylib`.
+- When Stremio creates its WebKit view, the library adds `skip-intro.plugin.js` to the page as a `WKUserScript`. The app bundle is never modified.
+- On macOS, Stremio's page talks to mpv through the same `window.chrome.webview` bridge as on Windows, so the plugin needs no changes.
+
+**Tested** on macOS 27.0.1 (Apple Silicon) with Stremio 5.1.31. The plugin loads, the mpv bridge works, Skip Intro seeks mpv, and Next Episode opens the next episode. The library is universal (it includes Intel), but it hasn't been tested on an Intel Mac.
+
+To uninstall:
+
+```bash
+curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/uninstall-mac.sh | bash
+```
+
+**Development:** build with `macos/build.sh`, which needs the Xcode Command Line Tools. `macos/dev-launch.sh` starts Stremio in developer mode: debug log, Safari Web Inspector, and an eval channel used by `macos/dev-eval.sh`.
+
 ## Install: Stremio Enhanced
 
 1. Install Stremio Enhanced and sign in.
