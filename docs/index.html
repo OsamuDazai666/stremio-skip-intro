@@ -148,6 +148,10 @@
   .lead p { margin: 0; color: var(--mist); max-width: 34em; }
   .get { padding-top: 6px; }
   [hidden] { display: none !important; }
+  /* Windows/macOS variants overlap in one grid cell; the inactive one is invisible but keeps its space. */
+  .stack { display: grid; }
+  .stack > * { grid-area: 1 / 1; }
+  .stack > .off { visibility: hidden; }
 
   /* Windows / macOS switch */
   .os { display: flex; width: max-content; padding: 3px; margin-bottom: 16px; border-radius: 8px; background: #0A1220; border: 1px solid var(--line); }
@@ -232,7 +236,7 @@
     section > h2, section > .intro-copy { grid-column: 1; }
     section > h2 { margin-top: 2px; }
     section > .intro-copy { margin-bottom: 0; font-size: 15px; }
-    section > .map, section > .steps, section > .faq, section > .support { grid-column: 2; grid-row: 1 / span 2; }
+    section > .map, section > .steps-slot, section > .faq, section > .support { grid-column: 2; grid-row: 1 / span 2; }
     .faq { max-width: none; }
     h1 { font-size: clamp(44px, 3.4vw, 68px); }
     body { font-size: 18px; }
@@ -360,9 +364,15 @@
             Copied. Paste it in Terminal
           </span>
         </button>
-        <div class="term" id="term"><span class="ps" id="prompt">PS&gt;</span><span id="cmd">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</span></div>
-        <p class="fine" data-for="win">Prefer a file? <a href="install.bat" download>Download install.bat</a> and double-click it. Needs the <a href="https://www.stremio.com/downloads">Stremio app for Windows</a>. Already installed? <a href="stremio:///">Open Stremio</a>.</p>
-        <p class="fine" data-for="mac" hidden>Paste it in Terminal (<kbd>Cmd</kbd> + <kbd>Space</kbd>, type Terminal). No admin password needed. Needs the official <a href="https://www.stremio.com/downloads">Stremio app for Mac</a>. Afterwards, open Stremio with the new <b>Stremio Skip Intro</b> app.</p>
+        <!-- Both variants share one slot (sized to the taller one), so switching never moves the page. -->
+        <div class="term stack" id="term">
+          <div class="cmdline" data-for="win"><span class="ps">PS&gt;</span><span class="cmd">irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex</span></div>
+          <div class="cmdline off" data-for="mac"><span class="ps">%</span><span class="cmd">curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-mac.sh | bash</span></div>
+        </div>
+        <div class="stack">
+          <p class="fine" data-for="win">Prefer a file? <a href="install.bat" download>Download install.bat</a> and double-click it. Needs the <a href="https://www.stremio.com/downloads">Stremio app for Windows</a>. Already installed? <a href="stremio:///">Open Stremio</a>.</p>
+          <p class="fine off" data-for="mac">Paste it in Terminal (<kbd>Cmd</kbd> + <kbd>Space</kbd>, type Terminal). No admin password needed. Needs the official <a href="https://www.stremio.com/downloads">Stremio app for Mac</a>. Afterwards, open Stremio with the new <b>Stremio Skip Intro</b> app.</p>
+        </div>
         <p class="sr-only" id="live" aria-live="polite"></p>
       </div>
     </div>
@@ -384,16 +394,18 @@
     <section aria-labelledby="install">
       <h2 id="install">Install</h2>
       <p class="intro-copy">About a minute, start to finish.</p>
+      <div class="stack steps-slot">
       <ol class="steps" data-for="win">
         <li><strong>Copy the command</strong><p>Use the yellow button above, or download install.bat instead.</p></li>
         <li><strong>Paste it in Terminal</strong><p>Press <kbd>Win</kbd> + <kbd>X</kbd>, open Terminal, paste with <kbd>Ctrl</kbd> + <kbd>V</kbd> and press <kbd>Enter</kbd>.</p></li>
         <li><strong>Click Yes</strong><p>Windows asks for permission once. Stremio restarts, and the next opening you hit has a Skip Intro button.</p></li>
       </ol>
-      <ol class="steps" data-for="mac" hidden>
+      <ol class="steps off" data-for="mac">
         <li><strong>Copy the command</strong><p>Use the yellow button above, with macOS selected.</p></li>
         <li><strong>Paste it in Terminal</strong><p>Press <kbd>Cmd</kbd> + <kbd>Space</kbd>, type Terminal, paste with <kbd>Cmd</kbd> + <kbd>V</kbd> and press <kbd>Return</kbd>. No password needed.</p></li>
         <li><strong>Open Stremio Skip Intro</strong><p>The installer opens it for you. From then on, start Stremio with the <b>Stremio Skip Intro</b> app (put it in your Dock instead of Stremio).</p></li>
       </ol>
+      </div>
     </section>
 
     <section aria-labelledby="where">
@@ -481,17 +493,12 @@
   // ---------- Install command ----------
   const copyBtn = document.getElementById('copy');
   const live = document.getElementById('live');
-  const cmdEl = document.getElementById('cmd');
-  const promptEl = document.getElementById('prompt');
-  const COMMANDS = {
-    win: { prompt: 'PS>', cmd: 'irm https://osamudazai666.github.io/stremio-skip-intro/install.ps1 | iex' },
-    mac: { prompt: '%', cmd: 'curl -fsSL https://osamudazai666.github.io/stremio-skip-intro/install-mac.sh | bash' },
-  };
+  let currentOs = 'win';
+  const activeCmd = () => document.querySelector('.cmdline[data-for="' + currentOs + '"] .cmd');
   function setOs(os) {
-    cmdEl.textContent = COMMANDS[os].cmd;
-    promptEl.textContent = COMMANDS[os].prompt;
+    currentOs = os;
     document.querySelectorAll('.os [data-os]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.os === os)));
-    document.querySelectorAll('[data-for]').forEach((el) => { el.hidden = el.dataset.for !== os; });
+    document.querySelectorAll('[data-for]').forEach((el) => el.classList.toggle('off', el.dataset.for !== os));
     copyBtn.classList.remove('copied');
   }
   document.querySelectorAll('.os [data-os]').forEach((b) => b.addEventListener('click', () => setOs(b.dataset.os)));
@@ -500,11 +507,12 @@
 
   let copiedTimer;
   copyBtn.addEventListener('click', async () => {
+    const cmdEl = activeCmd();
     const cmd = cmdEl.textContent;
     let ok = false;
     try { await navigator.clipboard.writeText(cmd); ok = true; } catch (_) {
       const r = document.createRange();
-      r.selectNodeContents(document.getElementById('cmd'));
+      r.selectNodeContents(cmdEl);
       const s = getSelection(); s.removeAllRanges(); s.addRange(r);
       try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
     }
