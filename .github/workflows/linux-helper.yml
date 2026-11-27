@@ -155,7 +155,12 @@ jobs:
 
       - name: Run uninstall-linux.sh
         run: |
+          # Another user override must survive the uninstall.
+          flatpak override --user --env=SOMETHING_ELSE=1 "$APP_ID"
           bash docs/uninstall-linux.sh
           [ ! -e "$DIR" ] || { echo "::error::files left behind"; exit 1; }
-          if flatpak override --user --show "$APP_ID" | grep -q LD_PRELOAD; then echo "::error::override left behind"; exit 1; fi
+          flatpak override --user --show "$APP_ID" | tee after.txt
+          if grep -q LD_PRELOAD after.txt; then echo "::error::override left behind"; exit 1; fi
+          grep -q "SOMETHING_ELSE=1" after.txt || { echo "::error::the user's other override was removed"; exit 1; }
+          flatpak override --user --unset-env=SOMETHING_ELSE "$APP_ID"
           echo "Uninstall clean."

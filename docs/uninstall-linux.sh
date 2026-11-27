@@ -11,8 +11,13 @@ UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
 printf '\n  \033[35mSkip Intro for Stremio (Linux): uninstall\033[0m\n'
 
-if command -v flatpak >/dev/null; then
-  flatpak override --user --unset-env=LD_PRELOAD "$APP_ID" 2>/dev/null || true
+# Remove only our LD_PRELOAD line from Stremio's per-user Flatpak overrides, keeping any others.
+# ("flatpak override --unset-env" would instead record an "unset LD_PRELOAD" rule.)
+OVERRIDE="${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/overrides/$APP_ID"
+if [ -f "$OVERRIDE" ]; then
+  sed -i '/^LD_PRELOAD=.*stremio-skip-intro/d' "$OVERRIDE"
+  # Drop the file if nothing but empty section headers is left.
+  if ! grep -qv '^\s*\(\[.*\]\)\?\s*$' "$OVERRIDE"; then rm -f "$OVERRIDE"; fi
 fi
 if command -v systemctl >/dev/null; then
   systemctl --user disable --now stremio-skip-intro-update.timer >/dev/null 2>&1 || true
