@@ -1,0 +1,7 @@
+.gradle
+**/build/
+!src/**/build/
+.idea/
+local.properties
+*.apk
+morphe-signing.key
