@@ -110,3 +110,52 @@ jobs:
             ${{ env.DIR }}/skipintro.log
             stremio.out
           if-no-files-found: ignore
+
+  installer:
+    # Runs the real install-linux.sh / uninstall-linux.sh against this commit's files.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      APP_ID: com.stremio.Stremio
+      SKIPINTRO_REPO_RAW: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flatpak and Stremio
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q flatpak xvfb dbus-x11 xauth
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub "$APP_ID"
+
+      - name: Run install-linux.sh
+        run: |
+          bash docs/install-linux.sh
+          DIR="$HOME/.var/app/$APP_ID/data/stremio-skip-intro"
+          ls -la "$DIR"
+          flatpak override --user --show "$APP_ID" | tee override.txt
+          grep -q "LD_PRELOAD=$DIR/libskipintro.so" override.txt || { echo "::error::override not set"; exit 1; }
+          echo "DIR=$DIR" >> "$GITHUB_ENV"
+
+      - name: Stremio loads the plugin after a normal install
+        run: |
+          export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          # SKIPINTRO_DEBUG only turns on the log; it is the only difference from a user's launch.
+          xvfb-run -a -s "-screen 0 1280x800x24" dbus-run-session -- \
+            flatpak run --env=SKIPINTRO_DEBUG=1 "$APP_ID" > stremio.out 2>&1 &
+          for i in $(seq 1 60); do
+            if grep -q "\[page\] v" "$DIR/skipintro.log" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          cat "$DIR/skipintro.log" || true
+          flatpak kill "$APP_ID" 2>/dev/null || true
+          grep -q "injector: plugin (.*) added to the web view" "$DIR/skipintro.log" || { echo "::error::plugin not added"; exit 1; }
+          grep -q "\[page\] v.* loaded" "$DIR/skipintro.log" || { echo "::error::plugin did not start in the page"; exit 1; }
+
+      - name: Run uninstall-linux.sh
+        run: |
+          bash docs/uninstall-linux.sh
+          [ ! -e "$DIR" ] || { echo "::error::files left behind"; exit 1; }
+          if flatpak override --user --show "$APP_ID" | grep -q LD_PRELOAD; then echo "::error::override left behind"; exit 1; fi
+          echo "Uninstall clean."

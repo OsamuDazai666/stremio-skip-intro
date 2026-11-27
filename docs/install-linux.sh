@@ -15,9 +15,9 @@
 set -euo pipefail
 
 APP_ID="com.stremio.Stremio"
-REPO_RAW="https://raw.githubusercontent.com/OsamuDazai666/stremio-skip-intro/main"
-SHA256_x86_64="__SHA256_X86_64__"
-SHA256_aarch64="__SHA256_AARCH64__"
+REPO_RAW="${SKIPINTRO_REPO_RAW:-https://raw.githubusercontent.com/OsamuDazai666/stremio-skip-intro/main}"
+SHA256_x86_64="9f564e42442a2ebaca96d3d210ec041dd88ff742fcd292dc8dae0fe0992293e8"
+SHA256_aarch64="6bdbab92d25090a53803502c8b2195c0f2a47a6056512d592863141d38b26bb8"
 DIR="$HOME/.var/app/$APP_ID/data/stremio-skip-intro"
 
 say() { printf '  %s\n' "$1"; }
