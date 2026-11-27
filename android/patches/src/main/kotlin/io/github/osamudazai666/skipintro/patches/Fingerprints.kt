@@ -2,6 +2,7 @@ package io.github.osamudazai666.skipintro.patches
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.InstructionLocation.MatchAfterImmediately
+import app.morphe.patcher.InstructionLocation.MatchBeforeWithin
 import app.morphe.patcher.methodCall
 import app.morphe.patcher.opcode
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -42,5 +43,42 @@ object SkipSegmentsFingerprint : Fingerprint(
         methodCall(definingClass = "Lcom/stremio/core/types/profile/Auth;", name = "getUser"),
         methodCall(parameters = listOf("Lcom/stremio/core/types/profile/User;"), returnType = "Z"),
         opcode(Opcode.MOVE_RESULT, MatchAfterImmediately()),
+    ),
+)
+
+/**
+ * The player screen draws the Skip Intro / credits overlay only for Stremio Premium accounts:
+ *
+ *     if (isPremium.getValue().booleanValue()) {
+ *         ...
+ *         SkipOverlay(..., time, duration, intro, outro, seriesInfo, nextVideo, settings.getBingeWatching(), ...);
+ *     }
+ *
+ * Anchored on the overlay call, found by its parameter types.
+ */
+object SkipOverlayFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(
+        methodCall(
+            returnType = "V",
+            parameters = listOf(
+                "L", "J", "J", "L", "L",
+                "Lcom/stremio/core/types/resource/Video\$SeriesInfo;",
+                "Lcom/stremio/core/types/resource/Video;",
+                "Z", "L", "L", "L", "F", "F", "F", "L", "L", "I",
+            ),
+        ),
+        methodCall(
+            definingClass = "Lcom/stremio/core/types/profile/Profile\$Settings;",
+            name = "getBingeWatching",
+            location = MatchBeforeWithin(60),
+        ),
+        methodCall(
+            definingClass = "Ljava/lang/Boolean;",
+            name = "booleanValue",
+            location = MatchBeforeWithin(80),
+        ),
+        opcode(Opcode.MOVE_RESULT, MatchAfterImmediately()),
+        opcode(Opcode.IF_EQZ, MatchAfterImmediately()),
     ),
 )

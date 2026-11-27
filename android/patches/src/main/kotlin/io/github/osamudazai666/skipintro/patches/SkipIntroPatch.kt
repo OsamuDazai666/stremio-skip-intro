@@ -41,7 +41,21 @@ val skipIntroPatch = bytecodePatch(
             )
         }
 
-        // 2. Let the segments through when they come from our sources (premium users unchanged).
+        // 2. Draw the skip overlay when we have timestamps (premium accounts unchanged).
+        SkipOverlayFingerprint.let {
+            val moveResult = it.instructionMatches[3]
+            val register = moveResult.getInstruction<OneRegisterInstruction>().registerA
+
+            it.method.addInstructions(
+                moveResult.index + 1,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION_CLASS->allowOverlay(Z)Z
+                    move-result v$register
+                """,
+            )
+        }
+
+        // 3. Let the segments through when they come from our sources (premium users unchanged).
         SkipSegmentsFingerprint.let {
             val moveResult = it.instructionMatches[2]
             val register = moveResult.getInstruction<OneRegisterInstruction>().registerA

@@ -58,6 +58,22 @@ public final class SkipIntro {
     }
 
     /**
+     * Replaces the player screen's premium check around the Skip Intro / credits overlay.
+     * The overlay only shows something when the player has skip segments, and for accounts
+     * without premium those can only come from us (see {@link #allow}).
+     */
+    public static boolean allowOverlay(boolean isPremium) {
+        try {
+            if (isPremium) return true;
+            Lookup.Times times = Lookup.get(currentVideoId);
+            return times != null && !times.isEmpty();
+        } catch (Throwable t) {
+            Log.w(TAG, "allowOverlay failed", t);
+            return isPremium;
+        }
+    }
+
+    /**
      * Replaces the player's premium check before it shows skip segments.
      * Passes when the account has premium, or when we have our own timestamps for this video.
      */
