@@ -34,8 +34,10 @@
   function dbg(...args) {
     if (!DEBUG) return;
     try {
-      const line = args.map((a) => (typeof a === 'string' ? a : a instanceof Error ? a.stack || a.message : JSON.stringify(a))).join(' ');
-      fetch('/skip-intro/log', { method: 'POST', body: line.slice(0, 4000), keepalive: true }).catch(() => {});
+      const line = args.map((a) => (typeof a === 'string' ? a : a instanceof Error ? a.stack || a.message : JSON.stringify(a))).join(' ').slice(0, 4000);
+      const mac = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.skipintro;
+      if (mac) mac.postMessage(line); // macOS injector writes these to skipintro.log
+      else fetch('/skip-intro/log', { method: 'POST', body: line, keepalive: true }).catch(() => {});
     } catch (_) { /* ignore */ }
   }
   const log = (...args) => { console.log('[SkipIntro]', ...args); dbg(...args); };
