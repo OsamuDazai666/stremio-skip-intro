@@ -10,3 +10,5 @@ android/gradlew text eol=lf
 *.kt text eol=lf
 *.java text eol=lf
 *.jar binary
+*.c text eol=lf
+*.so binary

@@ -1,0 +1,112 @@
+name: Linux helper
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'linux/**'
+      - 'skip-intro.plugin.js'
+      - 'docs/install-linux.sh'
+      - '.github/workflows/linux-helper.yml'
+
+jobs:
+  build:
+    # An older Ubuntu, so the library runs with any newer glibc (including Stremio's Flatpak runtime).
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compilers
+        run: sudo apt-get update -q && sudo apt-get install -y -q gcc gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+      - name: Build
+        run: bash linux/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libskipintro
+          path: linux/libskipintro-*.so
+          if-no-files-found: error
+
+  smoke:
+    # Runs the real Stremio Flatpak with the helper on a virtual screen and checks the plugin from inside.
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      APP_ID: com.stremio.Stremio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: libskipintro
+          path: built
+
+      - name: Install Flatpak and Stremio
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q flatpak xvfb dbus-x11 xauth
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y --noninteractive flathub "$APP_ID"
+          flatpak info --user "$APP_ID" | head -20
+
+      - name: Install the helper (same layout as install-linux.sh)
+        run: |
+          DIR="$HOME/.var/app/$APP_ID/data/stremio-skip-intro"
+          mkdir -p "$DIR"
+          cp built/libskipintro-x86_64.so "$DIR/libskipintro.so"
+          cp skip-intro.plugin.js "$DIR/"
+          cp linux/dev-test.js "$DIR/"
+          flatpak override --user --env=LD_PRELOAD="$DIR/libskipintro.so" "$APP_ID"
+          flatpak override --user --show "$APP_ID"
+          echo "DIR=$DIR" >> "$GITHUB_ENV"
+
+      - name: Run Stremio and wait for the smoke test
+        run: |
+          export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          xvfb-run -a -s "-screen 0 1280x800x24" dbus-run-session -- \
+            flatpak run --env=SKIPINTRO_DEV=1 --env=WEBKIT_DISABLE_DMABUF_RENDERER=1 "$APP_ID" > stremio.out 2>&1 &
+          for i in $(seq 1 120); do
+            if grep -q "SMOKE" "$DIR/skipintro.log" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          sleep 2
+          echo "----- skipintro.log"; cat "$DIR/skipintro.log" || true
+          echo "----- stremio output (tail)"; tail -n 60 stremio.out || true
+          flatpak kill "$APP_ID" 2>/dev/null || true
+          pkill -f xvfb-run 2>/dev/null || true
+
+      - name: Check results
+        run: |
+          LOG="$DIR/skipintro.log"
+          grep -q "injector: loaded into pid" "$LOG" || { echo "::error::The helper was not loaded into Stremio"; exit 1; }
+          grep -q "injector: plugin (.*) added to the web view" "$LOG" || { echo "::error::The plugin was not added to the web view"; exit 1; }
+          SMOKE=$(grep -o 'SMOKE .*' "$LOG" | head -n1 | cut -c7-)
+          [ -n "$SMOKE" ] || { echo "::error::No smoke test report from the page"; exit 1; }
+          echo "$SMOKE" | python3 -m json.tool
+          echo "$SMOKE" | python3 -c '
+          import json, sys
+          r = json.load(sys.stdin)
+          checks = {
+              "plugin loaded in the page": r.get("plugin") is True,
+              "Stremio IPC bridge present": r.get("ipcBridge") is True,
+              "mpv bridge hooked": r.get("bridgeHooked") is True,
+              "postMessage wrapped": r.get("postMessageWrapped") is True,
+              "mpv event received": r.get("mpvEventSeen") is True,
+              "AniSkip lookup (Frieren S1E27 intro)": bool(r.get("aniskipIntro")),
+              "anime map (tt22248376:1:27 -> MAL 52991 ep 27)": r.get("animeMap") == {"mal": 52991, "ep": 27},
+          }
+          failed = [k for k, ok in checks.items() if not ok]
+          for k, ok in checks.items():
+              print(("PASS  " if ok else "FAIL  ") + k)
+          sys.exit(1 if failed else 0)
+          '
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-logs
+          path: |
+            ${{ env.DIR }}/skipintro.log
+            stremio.out
+          if-no-files-found: ignore
