@@ -9,7 +9,7 @@ import io.github.osamudazai666.skipintro.patches.Constants.EXTENSION_CLASS
 @Suppress("unused")
 val skipIntroPatch = bytecodePatch(
     name = "Skip Intro",
-    description = "Shows Stremio's Skip Intro button and Next Episode popup using AniSkip (anime) " +
+    description = "Netflix-style Skip Intro and Next Episode buttons in Stremio's player, using AniSkip (anime) " +
         "and TheIntroDB (series, movies, anime) timestamps. Works without Stremio Premium; " +
         "Stremio's own premium timestamps stay premium-only.",
     default = true,
@@ -55,7 +55,21 @@ val skipIntroPatch = bytecodePatch(
             )
         }
 
-        // 3. Let the segments through when they come from our sources (premium users unchanged).
+        // 3. Draw our own Netflix-style buttons from the overlay's inputs, and keep Stremio's hidden.
+        SkipOverlayComposableFingerprint.method.addInstructions(
+            0,
+            """
+                invoke-static/range { p0 .. p12 }, $EXTENSION_CLASS->onOverlay(Ljava/lang/Object;JJLjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;ZLjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+            """,
+        )
+        SkipOverlayVisibleFingerprint.method.addInstructions(
+            0,
+            """
+                const/4 p1, 0x0
+            """,
+        )
+
+        // 4. Let the segments through when they come from our sources (premium users unchanged).
         SkipSegmentsFingerprint.let {
             val moveResult = it.instructionMatches[2]
             val register = moveResult.getInstruction<OneRegisterInstruction>().registerA

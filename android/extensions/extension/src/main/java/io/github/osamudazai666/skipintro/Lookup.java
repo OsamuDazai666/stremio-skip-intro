@@ -31,6 +31,8 @@ final class Lookup {
     /** Times in milliseconds; -1 when absent. */
     static final class Times {
         long introStartMs = -1, introEndMs = -1, outroStartMs = -1, durationMs;
+        /** The intro range is a recap ("previously on"), with no opening after it. */
+        boolean introIsRecap;
         String source = "";
 
         boolean isEmpty() {
@@ -300,6 +302,7 @@ final class Lookup {
         } else if (recap != null) {
             start = recap.start;
             end = recap.end;
+            t.introIsRecap = true;
             source.append(recap.source);
         }
         if (start >= 0) {

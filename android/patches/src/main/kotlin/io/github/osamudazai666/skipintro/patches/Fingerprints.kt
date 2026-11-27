@@ -56,18 +56,17 @@ object SkipSegmentsFingerprint : Fingerprint(
  *
  * Anchored on the overlay call, found by its parameter types.
  */
+private val SKIP_OVERLAY_PARAMETERS = listOf(
+    "L", "J", "J", "L", "L",
+    "Lcom/stremio/core/types/resource/Video\$SeriesInfo;",
+    "Lcom/stremio/core/types/resource/Video;",
+    "Z", "L", "L", "L", "F", "F", "F", "L", "L", "I",
+)
+
 object SkipOverlayFingerprint : Fingerprint(
     returnType = "V",
     filters = listOf(
-        methodCall(
-            returnType = "V",
-            parameters = listOf(
-                "L", "J", "J", "L", "L",
-                "Lcom/stremio/core/types/resource/Video\$SeriesInfo;",
-                "Lcom/stremio/core/types/resource/Video;",
-                "Z", "L", "L", "L", "F", "F", "F", "L", "L", "I",
-            ),
-        ),
+        methodCall(returnType = "V", parameters = SKIP_OVERLAY_PARAMETERS),
         methodCall(
             definingClass = "Lcom/stremio/core/types/profile/Profile\$Settings;",
             name = "getBingeWatching",
@@ -81,4 +80,24 @@ object SkipOverlayFingerprint : Fingerprint(
         opcode(Opcode.MOVE_RESULT, MatchAfterImmediately()),
         opcode(Opcode.IF_EQZ, MatchAfterImmediately()),
     ),
+)
+
+/**
+ * The skip overlay composable itself:
+ *
+ *     SkipOverlay(modifier, time, duration, intro, outro, seriesInfo, nextVideo, bingeWatching,
+ *                 onSkipIntro, onNext, onDismiss, ...)
+ */
+object SkipOverlayComposableFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
+    returnType = "V",
+    parameters = SKIP_OVERLAY_PARAMETERS,
+)
+
+/** {@code static void setVisible(MutableState<Boolean> state, boolean visible)} next to the overlay. */
+object SkipOverlayVisibleFingerprint : Fingerprint(
+    classFingerprint = SkipOverlayComposableFingerprint,
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
+    returnType = "V",
+    parameters = listOf("L", "Z"),
 )

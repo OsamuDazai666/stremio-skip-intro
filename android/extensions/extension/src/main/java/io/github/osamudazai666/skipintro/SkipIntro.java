@@ -57,6 +57,31 @@ public final class SkipIntro {
         }
     }
 
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    /**
+     * Called at the start of Stremio's skip overlay composable, which re-renders on every playback
+     * position change. Stremio's own overlay is kept hidden; ours is drawn from the same inputs and
+     * calls the same actions.
+     */
+    public static void onOverlay(Object modifier, long timeMs, long durationMs, Object intro, Object outro,
+                                 Object seriesInfo, Object nextVideo, boolean binge,
+                                 Object onSkipIntro, Object onNext, Object onDismiss) {
+        try {
+            Lookup.Times times = Lookup.get(currentVideoId);
+            final boolean recap = times != null && times.introIsRecap;
+            MAIN.post(() -> {
+                try {
+                    Overlay.update(timeMs, durationMs, intro, outro, nextVideo, binge, onSkipIntro, onNext, recap);
+                } catch (Throwable t) {
+                    Log.w(TAG, "overlay update failed", t);
+                }
+            });
+        } catch (Throwable t) {
+            Log.w(TAG, "onOverlay failed", t);
+        }
+    }
+
     /**
      * Replaces the player screen's premium check around the Skip Intro / credits overlay.
      * The overlay only shows something when the player has skip segments, and for accounts
